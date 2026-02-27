@@ -1,6 +1,71 @@
 import numpy as np
 import pandas as pd
-import sklearn.model_selection as ms
+import matplotlib.pyplot as plt
+import seaborn as sb
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
-dataset = pd.read_csv("../datasets/Healthcare_Data_Analysis_for_readmission.csv")
-print(dataset.head())
+from sklearn.metrics import accuracy_score, classification_report
+
+dataset = pd.read_csv("../datasets/CleanedDataSet_jh.csv")
+
+#dataset.hist(bins=50, figsize=(10,10))
+#plt.show()
+
+def create_datasets(ds):
+    # X = everything except the label column
+
+    # Create date features
+
+    # Hospital ward
+    ds = pd.get_dummies(ds, columns=['hospital_ward'], prefix="hospital_ward")
+    # Referral Department
+    ds = pd.get_dummies(ds, columns=['department_referral'], prefix="referred_from")
+    # Referral Department
+    ds = pd.get_dummies(ds, columns=['doctor_specialty'], prefix="doctor_specialty")
+    # Referral Department
+    ds = pd.get_dummies(ds, columns=['patient_disease'], prefix="disease")
+    # Discharge Status
+    ds = pd.get_dummies(ds, columns=['discharge_status'], prefix="discharge_status")
+
+    ds["time_slot"] = pd.to_datetime(ds["time_slot"], format="%I:%M:%S %p")
+
+    ds["admission_hour"] = ds["time_slot"].dt.hour  # 0-23
+    ds["admission_minute"] = ds["time_slot"].dt.minute
+
+    ds = ds.drop(columns=["time_slot"])
+
+    ds = ds.drop(columns=['patient_last_name'])
+    ds = ds.drop(columns=['doctor_name'])
+    ds = ds.drop(columns=['patient_checkin_date'])
+    ds = ds.drop(columns=['patient_checkout_date'])
+
+    # Gender
+    ds["patient_gender"] = ds["patient_gender"].map({"Male": 1, "Female": 0}).fillna(-1)
+
+    # Patient Race
+    ds = pd.get_dummies(ds, columns=['patient_race'], prefix="patient_race")
+
+    print(ds.head())
+
+    ds = ds.drop(columns=["Admission_date"])
+
+    X = ds.drop(columns=["readmission"]).values
+
+    # y = just the label column
+    y = ds["readmission"].values
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print(classification_report(y_test, y_pred))
+
+    return
+
+if __name__ == "__main__":
+    create_datasets(dataset)
+
