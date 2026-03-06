@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 
 from sklearn.metrics import accuracy_score, classification_report
 
@@ -50,6 +50,8 @@ def create_datasets(ds):
 
     ds = ds.drop(columns=["Admission_date"])
 
+    ds.to_csv("../datasets/processed_data.csv", index=False)
+
     X = ds.drop(columns=["readmission"]).values
 
     # y = just the label column
@@ -57,10 +59,25 @@ def create_datasets(ds):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 
-    model = LogisticRegression(max_iter=1000)
-    model.fit(X_train, y_train)
+    #model = LogisticRegression(max_iter=1000)
 
-    y_pred = model.predict(X_test)
+    param_grid = {
+        "n_estimators": [50, 100, 200],
+        "max_depth": [5, 10, 20, None],
+        "min_samples_split": [2, 5, 10]
+    }
+
+    grid_search = GridSearchCV(
+        LogisticRegression(max_iter=1000),
+        param_grid,
+        cv=5,  # 5-fold cross-validation
+        scoring="f1",  # Optimize for F1 score
+        n_jobs=-1  # Use all CPU cores
+    )
+
+    grid_search.fit(X_train, y_train)
+    print(grid_search.best_params_)
+    y_pred = grid_search.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
     print(classification_report(y_test, y_pred))
 
