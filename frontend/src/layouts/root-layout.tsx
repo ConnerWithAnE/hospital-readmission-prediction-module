@@ -5,12 +5,18 @@ import { AppSidebar } from "@/components/app-sidebar";
 export function RootLayout() {
     return (
         <SidebarProvider>
-            <div className="flex min-screen w-full overflow-hidden border-r-2">
+            <div className="flex min-h-screen w-full overflow-hidden">
                 <AppSidebar />
-                <main className="flex-1">
+
+                <div className="flex flex-col flex-1">
+                <header className="flex h-12 items-center border-b px-4">
                     <SidebarTrigger />
+                </header>
+
+                <main className="flex-1 p-4">
                     <Outlet />
                 </main>
+                </div>
             </div>
         </SidebarProvider>
     );

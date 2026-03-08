@@ -30,16 +30,7 @@ export function AppSidebar() {
                             <a href="/" className="text-xs"><span>Patient Assesment</span></a>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip="Users">
-                            <a href="/users"><APITester /> <span>Users</span></a>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip="Settings">
-                            <a href="/settings"><APITester /> <span>Settings</span></a>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
+
                         </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>

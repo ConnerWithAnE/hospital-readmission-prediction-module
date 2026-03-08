@@ -2,14 +2,30 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Planning/Considerations.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Planning/Reasoning.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Planning/TechnicalEvaluationTask .pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/data_processing.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/datasets/CleanedDataSet_jh.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/datasets/Healthcare_Data_Analysis_for_readmission.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/datasets/archive.zip" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/code/cci.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/code/data_maps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/Dataset_finding.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/Planning/Considerations.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/Planning/Reasoning.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/dataset_exploration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/dataset_exploration.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/main.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/meta_learning_testing.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/datasets/processed_data.csv" beforeDir="false" afterPath="$PROJECT_DIR$/backend/datasets/processed_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/ui/label.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/ui/label.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/layouts/root-layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/layouts/root-layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/logo.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/react.svg" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,14 +54,45 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;last_opened_file_path&quot;: &quot;/home/conner/Dev/hospital_readmission_risk_prediction&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="hospital_readmission_risk_prediction" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend/server" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/server/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
