@@ -3,6 +3,7 @@ import { RootLayout } from "./layouts/root-layout";
 import { APITester } from "./APITester";
 
 import "src/index.css";
+import { PatientAssessmentPage } from "./pages/patient-assesment";
 
 //<Route path="/" element={<Dashboard />} />
 //<Route path="/settings" element={<Settings />} />
@@ -11,7 +12,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<RootLayout />}>
-            <Route path="/" element={<APITester />} />
+            <Route path="/" element={<PatientAssessmentPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,2 +1,24 @@
-import * as React from "react";
+import { useState } from "react"
+import InfoWindow from "@/components/patient-assessment/info-window";
+import ScoreWindow from "@/components/patient-assessment/score-window";
 
+export interface PredictionResult {
+    risk_score: number
+    risk_category: "low" | "moderate" | "high"
+    contributing_factors: {
+        feature: string
+        value: number
+        impact: number
+    }[]
+}
+
+export function PatientAssessmentPage() {
+    const [result, setResult] = useState<PredictionResult | null>(null)
+
+    return (
+        <div className="flex w-full h-full gap-4">
+            <InfoWindow onResult={setResult} />
+            <ScoreWindow result={result} />
+        </div>
+    )
+}

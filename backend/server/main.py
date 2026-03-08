@@ -1,23 +1,29 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
+from ..code.data_processing import PredictionModel
+from .models import PatientInput
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
-def read_root():
-    return
+prediction_model = PredictionModel.load_or_train()
+
+
+@app.get("/api/fields")
+def get_fields():
+    return PatientInput.get_fields()
+
 
 @app.post("/api/predict")
-async def predict(patient_data: dict):
-    # TODO features = preprocess(patient_data)
-    # TODO risk_score = model.predict_proba(features)[:,1][0]
-    return
+async def predict(patient_data: PatientInput):
+    return prediction_model.predict(patient_data)
+
 
 app.mount("/", '''StaticFiles(directory="frontend/dist", html=True)''', name="static")
-
-
-
