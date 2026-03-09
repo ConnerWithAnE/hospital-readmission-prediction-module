@@ -170,7 +170,7 @@ class PatientInput(BaseModel):
     number_emergency: int = Field(ge=0)
     charlson_categories: list[CharlsonCategoryEnum] = Field(default_factory=list)
 
-    def compute_cci(self) -> int:
+    def compute_cci(self):
         selected = set(c.value for c in self.charlson_categories)
 
         # Apply hierarchical rules
@@ -225,7 +225,7 @@ class PatientInput(BaseModel):
             "total_prior_visits": self.number_inpatient + self.number_outpatient + self.number_emergency,
             "has_prior_inpatient": int(self.number_inpatient > 0),
             "meds_per_day": self.num_medications / (self.time_in_hospital + 1),
-            "diag_per_day": self.number_diagnoses / (self.time_in_hospital + 1),
+            "diag_per_day": 0 if self.number_diagnoses == 0 else self.number_diagnoses / (self.time_in_hospital or 1),
             # Categorical columns — the saved encoder will one-hot encode these
             "race": self.race.value,
             "discharge_group": self.discharge_group.value,

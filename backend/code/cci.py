@@ -93,12 +93,6 @@ CHARLSON_CATEGORIES = {
 def clean_icd9_code(code):
     """
     Clean and standardize an ICD-9 code from the UCI dataset.
-
-    The dataset stores diagnosis codes as strings with inconsistent formats:
-    - Numeric codes may have decimals or not (e.g., "428.1" or "428")
-    - V-codes (supplementary) start with "V" (e.g., "V43.4")
-    - E-codes (external causes) start with "E" (e.g., "E950")
-    - Missing values appear as "?" or NaN
     """
     if pd.isna(code) or str(code).strip() in ("?", "", "nan", "None"):
         return None

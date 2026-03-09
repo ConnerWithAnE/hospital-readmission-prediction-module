@@ -11,6 +11,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 import { APITester } from "@/APITester";
 
 
@@ -27,7 +28,18 @@ export function AppSidebar() {
                         <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip="Home">
-                            <a href="/" className="text-xs"><span>Patient Assesment</span></a>
+                                <Link to="/" className="text-xs"><span>Patient Assesment</span></Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+
+                        </SidebarMenu>
+                </SidebarGroup>
+                <SidebarGroup>
+                    <SidebarGroupLabel>ML Resources</SidebarGroupLabel>
+                        <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="Home">
+                                <Link to="/model_stats" className="text-xs"><span>ML Model Assesment</span></Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
 
