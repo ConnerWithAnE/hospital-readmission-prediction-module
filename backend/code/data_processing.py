@@ -5,6 +5,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from xgboost import XGBClassifier
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 import matplotlib
