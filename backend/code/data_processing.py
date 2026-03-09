@@ -1,3 +1,5 @@
+import base64
+import io
 from pathlib import Path
 
 import joblib
@@ -5,6 +7,8 @@ import numpy as np
 import pandas as pd
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sb
 from lightgbm import LGBMClassifier
@@ -60,7 +64,12 @@ class PredictionModel:
         df["meds_per_day"] = df["num_medications"] / (df["time_in_hospital"] + 1)
 
         # Diagnosis complexity relative to stay
-        df["diag_per_day"] = df["number_diagnoses"] / (df["time_in_hospital"] + 1)
+        stay = np.where(df["time_in_hospital"] == 0, 1, df["time_in_hospital"])
+        df["diag_per_day"] = np.where(
+            df["number_diagnoses"] == 0,
+            0,
+            df["number_diagnoses"] / stay
+        )
 
         # df["inpatient_x_emergency"] = df["number_inpatient"] * df["number_emergency"]
         # df["total_visits"] = df["number_inpatient"] + df["number_outpatient"] + df["number_emergency"]
@@ -111,6 +120,10 @@ class PredictionModel:
         MODELS_DIR.mkdir(exist_ok=True)
         joblib.dump(self.model, MODELS_DIR / "stacking_readmit_model.pkl")
         joblib.dump(self.encoder, MODELS_DIR / "encoder.pkl")
+        joblib.dump(self.X_train, MODELS_DIR / "X_train.pkl")
+        joblib.dump(self.X_test, MODELS_DIR / "X_test.pkl")
+        joblib.dump(self.y_train, MODELS_DIR / "y_train.pkl")
+        joblib.dump(self.y_test, MODELS_DIR / "y_test.pkl")
 
     @classmethod
     def load_or_train(cls):
@@ -119,12 +132,75 @@ class PredictionModel:
             instance = object.__new__(cls)
             instance.model = joblib.load(MODELS_DIR / "stacking_readmit_model.pkl")
             instance.encoder = joblib.load(MODELS_DIR / "encoder.pkl")
+            instance.X_train = joblib.load(MODELS_DIR / "X_train.pkl")
+            instance.X_test = joblib.load(MODELS_DIR / "X_test.pkl")
+            instance.y_train = joblib.load(MODELS_DIR / "y_train.pkl")
+            instance.y_test = joblib.load(MODELS_DIR / "y_test.pkl")
             return instance
         except FileNotFoundError:
             instance = cls()
             instance.train()
             instance.save_model()
             return instance
+
+    @staticmethod
+    def _fig_to_base64(fig):
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("utf-8")
+
+    def get_model_stats(self):
+
+        if self.X_test is None or self.y_test is None:
+            return {"error": "No test set loaded"}
+
+        y_proba = self.model.predict_proba(self.X_test)[:, 1]
+
+        metrics = {}
+
+        # Core metrics
+        auroc = roc_auc_score(self.y_test, y_proba)
+        auprc = average_precision_score(self.y_test, y_proba)
+        metrics["AUROC"] = f"{auroc:.3f}"
+        metrics["AUPRC"] = f"{auprc:.3f}"
+
+        # Find a good threshold using precision-recall trade-off
+        precision, recall, thresholds = precision_recall_curve(self.y_test, y_proba)
+
+        # Computes F1 score (Harmonic mean), adds small 1e-8 to prevent division by 0 error
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+        best_threshold = thresholds[f1_scores.argmax()]
+        metrics["best_f1_threshold"] = f"{best_threshold:.3f}"
+
+        # Confusion matrix at that threshold
+        y_pred = (y_proba >= best_threshold).astype(int)
+        metrics["classification_report"] = classification_report(self.y_test, y_pred, target_names=['No Readmit', 'Readmit'])
+        cm = confusion_matrix(self.y_test, y_pred)
+
+        # Confusion matrix PNG
+        fig_cm, ax_cm = plt.subplots()
+        sb.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                   xticklabels=["No Readmit", "Readmit"],
+                   yticklabels=["No Readmit", "Readmit"], ax=ax_cm)
+        ax_cm.set_xlabel("Predicted")
+        ax_cm.set_ylabel("Actual")
+        ax_cm.set_title("Confusion Matrix")
+        metrics["confusion_matrix_png"] = self._fig_to_base64(fig_cm)
+
+        # Calibration curve PNG
+        prob_true, prob_pred = calibration_curve(self.y_test, y_proba, n_bins=10)
+        fig_cal, ax_cal = plt.subplots()
+        ax_cal.plot(prob_pred, prob_true, marker='o', label="Model")
+        ax_cal.plot([0, 1], [0, 1], linestyle='--', label="Perfectly calibrated")
+        ax_cal.set_xlabel("Predicted probability")
+        ax_cal.set_ylabel("Observed frequency")
+        ax_cal.set_title("Calibration Curve")
+        ax_cal.legend()
+        metrics["calibration_curve_png"] = self._fig_to_base64(fig_cal)
+        print(metrics)
+        return metrics
 
     def _prepare_input(self, patient_input):
         """Convert PatientInput into the encoded DataFrame the model expects."""
@@ -213,6 +289,3 @@ class PredictionModel:
             "AUROC": auroc,
             "AUPRC": auprc,
         }
-if __name__ == "__main__":
-        #return
-        print("stuff")

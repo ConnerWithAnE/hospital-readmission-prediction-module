@@ -4,6 +4,7 @@ import { APITester } from "./APITester";
 
 import "src/index.css";
 import { PatientAssessmentPage } from "./pages/patient-assesment";
+import { ModelAssessmentPage } from "./pages/model-assessment";
 
 //<Route path="/" element={<Dashboard />} />
 //<Route path="/settings" element={<Settings />} />
@@ -13,6 +14,7 @@ export function App() {
       <Routes>
         <Route element={<RootLayout />}>
             <Route path="/" element={<PatientAssessmentPage />} />
+            <Route path="/model_stats" element={<ModelAssessmentPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

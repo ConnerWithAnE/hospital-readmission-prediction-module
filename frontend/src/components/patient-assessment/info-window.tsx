@@ -5,6 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import ManualEntry from "./manual-entry"
 import type { PredictionResult } from "@/pages/patient-assesment"
@@ -55,8 +56,17 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
             <Tabs defaultValue="manual">
                 <div className="grid grid-cols-2 gap-6">
                     <TabsList className="w-full">
-                        <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                        <TabsTrigger value="upload">Upload</TabsTrigger>
+                        <TabsTrigger value="manual" className="col-span-1">Manual Entry</TabsTrigger>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <span>
+                                    <TabsTrigger value="upload" disabled>Upload</TabsTrigger>
+                                </span>
+                                </TooltipTrigger>
+                                <TooltipContent>Coming soon</TooltipContent>
+                            </Tooltip>
+                            </TooltipProvider>
                     </TabsList>
                     <Button variant="outline" onClick={handleRunAssessment}>Run Assessment</Button>
                 </div>
