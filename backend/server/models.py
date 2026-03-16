@@ -42,115 +42,91 @@ class AdmissionSourceEnum(str, Enum):
     unknown = "unknown"
 
 
-CHARLSON_CATEGORIES = {
-"myocardial_infarction": {
-        "weight": 1,
-        "icd9_ranges": [(410, 412)],
-        "icd9_exact": ["410", "411", "412"],
-    },
-    "congestive_heart_failure": {
-        "weight": 1,
-        "icd9_ranges": [(428, 428)],
-        "icd9_prefixes": ["428"],
-    },
-    "peripheral_vascular_disease": {
-        "weight": 1,
-        "icd9_ranges": [(440, 441)],
-        "icd9_prefixes": ["440", "441", "443.9", "785.4"],
-        "icd9_exact": ["V43.4"],
-    },
-    "cerebrovascular_disease": {
-        "weight": 1,
-        "icd9_ranges": [(430, 438)],
-        "icd9_prefixes": [],
-    },
-    "dementia": {
-        "weight": 1,
-        "icd9_ranges": [(290, 290)],
-        "icd9_prefixes": ["290"],
-    },
-    "chronic_pulmonary_disease": {
-        "weight": 1,
-        "icd9_ranges": [(490, 496), (500, 505)],
-        "icd9_prefixes": ["506.4"],
-    },
-    "rheumatic_connective_tissue": {
-        "weight": 1,
-        "icd9_prefixes": ["710.0", "710.1", "710.4", "714.0", "714.1", "714.2", "714.81", "725"],
-        "icd9_ranges": [],
-    },
-    "peptic_ulcer_disease": {
-        "weight": 1,
-        "icd9_ranges": [(531, 534)],
-        "icd9_prefixes": [],
-    },
-    "mild_liver_disease": {
-        "weight": 1,
-        "icd9_prefixes": ["571.2", "571.4", "571.5", "571.6"],
-        "icd9_ranges": [],
-    },
-    "diabetes_no_complications": {
-        "weight": 1,
-        "icd9_prefixes": ["250.0", "250.1", "250.2", "250.3"],
-        "icd9_ranges": [],
-    },
-    "diabetes_with_complications": {
-        "weight": 2,
-        "icd9_prefixes": ["250.4", "250.5", "250.6", "250.7", "250.8", "250.9"],
-        "icd9_ranges": [],
-    },
-    "hemiplegia_paraplegia": {
-        "weight": 2,
-        "icd9_prefixes": ["342", "344.1"],
-        "icd9_ranges": [(342, 342)],
-    },
-    "renal_disease": {
-        "weight": 2,
-        "icd9_prefixes": ["582", "583", "585", "586", "588"],
-        "icd9_ranges": [(582, 583), (585, 586)],
-        "icd9_exact": ["V42.0", "V45.1", "V56"],
-    },
-    "cancer_malignancy": {
-        "weight": 2,
-        "icd9_ranges": [(140, 172), (174, 195), (200, 208)],
-        "icd9_prefixes": [],
-    },
-    "moderate_severe_liver_disease": {
-        "weight": 3,
-        "icd9_prefixes": ["572.2", "572.3", "572.4", "572.5", "572.6", "572.7", "572.8"],
-        "icd9_ranges": [],
-    },
-    "metastatic_solid_tumor": {
-        "weight": 6,
-        "icd9_ranges": [(196, 199)],
-        "icd9_prefixes": [],
-    },
-    "aids_hiv": {
-        "weight": 6,
-        "icd9_ranges": [(42, 44)],
-        "icd9_prefixes": ["042", "043", "044"],
-    },
+# ---------------------------------------------------------------------------
+# Unified comorbidity weights: (charlson_weight, elixhauser_van_walraven_weight)
+# None = condition is not part of that index.
+# ---------------------------------------------------------------------------
+COMORBIDITY_WEIGHTS = {
+    # Shared between Charlson and Elixhauser
+    "congestive_heart_failure":        (1, 7),
+    "peripheral_vascular_disease":     (1, 2),
+    "chronic_pulmonary_disease":       (1, 3),
+    "diabetes_uncomplicated":          (1, 0),
+    "diabetes_complicated":            (2, 0),
+    "paralysis":                       (2, 7),
+    "renal_disease":                   (2, 5),
+    "peptic_ulcer_disease":            (1, 0),
+    "rheumatic_disease":               (1, 0),
+    "aids_hiv":                        (6, 0),
+    "metastatic_cancer":               (6, 12),
+    "cancer":                          (2, 4),
+    "liver_disease":                   (3, 11),
+    "mild_liver_disease":              (1, None),
+    # Charlson-only
+    "myocardial_infarction":           (1, None),
+    "cerebrovascular_disease":         (1, None),
+    "dementia":                        (1, None),
+    # Elixhauser-only
+    "cardiac_arrhythmias":             (None, 5),
+    "valvular_disease":                (None, -1),
+    "pulmonary_circulation_disorders": (None, 4),
+    "hypertension_uncomplicated":      (None, 0),
+    "hypertension_complicated":        (None, 0),
+    "other_neurological_disorders":    (None, 6),
+    "hypothyroidism":                  (None, 0),
+    "lymphoma":                        (None, 9),
+    "coagulopathy":                    (None, 3),
+    "obesity":                         (None, -4),
+    "weight_loss":                     (None, 6),
+    "fluid_electrolyte_disorders":     (None, 5),
+    "blood_loss_anemia":               (None, -2),
+    "deficiency_anemias":              (None, -2),
+    "alcohol_abuse":                   (None, 0),
+    "drug_abuse":                      (None, -7),
+    "psychoses":                       (None, 0),
+    "depression":                      (None, -3),
 }
 
 
-class CharlsonCategoryEnum(str, Enum):
-    myocardial_infarction = "myocardial_infarction"
+class ComorbidityEnum(str, Enum):
+    # Shared
     congestive_heart_failure = "congestive_heart_failure"
     peripheral_vascular_disease = "peripheral_vascular_disease"
+    chronic_pulmonary_disease = "chronic_pulmonary_disease"
+    diabetes_uncomplicated = "diabetes_uncomplicated"
+    diabetes_complicated = "diabetes_complicated"
+    paralysis = "paralysis"
+    renal_disease = "renal_disease"
+    peptic_ulcer_disease = "peptic_ulcer_disease"
+    rheumatic_disease = "rheumatic_disease"
+    aids_hiv = "aids_hiv"
+    metastatic_cancer = "metastatic_cancer"
+    cancer = "cancer"
+    liver_disease = "liver_disease"
+    mild_liver_disease = "mild_liver_disease"
+    # Charlson-only
+    myocardial_infarction = "myocardial_infarction"
     cerebrovascular_disease = "cerebrovascular_disease"
     dementia = "dementia"
-    chronic_pulmonary_disease = "chronic_pulmonary_disease"
-    rheumatic_connective_tissue = "rheumatic_connective_tissue"
-    peptic_ulcer_disease = "peptic_ulcer_disease"
-    mild_liver_disease = "mild_liver_disease"
-    diabetes_no_complications = "diabetes_no_complications"
-    diabetes_with_complications = "diabetes_with_complications"
-    hemiplegia_paraplegia = "hemiplegia_paraplegia"
-    renal_disease = "renal_disease"
-    cancer_malignancy = "cancer_malignancy"
-    moderate_severe_liver_disease = "moderate_severe_liver_disease"
-    metastatic_solid_tumor = "metastatic_solid_tumor"
-    aids_hiv = "aids_hiv"
+    # Elixhauser-only
+    cardiac_arrhythmias = "cardiac_arrhythmias"
+    valvular_disease = "valvular_disease"
+    pulmonary_circulation_disorders = "pulmonary_circulation_disorders"
+    hypertension_uncomplicated = "hypertension_uncomplicated"
+    hypertension_complicated = "hypertension_complicated"
+    other_neurological_disorders = "other_neurological_disorders"
+    hypothyroidism = "hypothyroidism"
+    lymphoma = "lymphoma"
+    coagulopathy = "coagulopathy"
+    obesity = "obesity"
+    weight_loss = "weight_loss"
+    fluid_electrolyte_disorders = "fluid_electrolyte_disorders"
+    blood_loss_anemia = "blood_loss_anemia"
+    deficiency_anemias = "deficiency_anemias"
+    alcohol_abuse = "alcohol_abuse"
+    drug_abuse = "drug_abuse"
+    psychoses = "psychoses"
+    depression = "depression"
 
 
 class PatientInput(BaseModel):
@@ -168,20 +144,43 @@ class PatientInput(BaseModel):
     number_inpatient: int = Field(ge=0)
     number_outpatient: int = Field(ge=0)
     number_emergency: int = Field(ge=0)
-    charlson_categories: list[CharlsonCategoryEnum] = Field(default_factory=list)
+    comorbidities: list[ComorbidityEnum] = Field(default_factory=list)
 
     def compute_cci(self):
-        selected = set(c.value for c in self.charlson_categories)
+        """Compute Charlson Comorbidity Index from selected comorbidities."""
+        selected = set(c.value for c in self.comorbidities)
 
-        # Apply hierarchical rules
-        if "diabetes_with_complications" in selected:
-            selected.discard("diabetes_no_complications")
-        if "moderate_severe_liver_disease" in selected:
+        # Charlson hierarchical rules
+        if "diabetes_complicated" in selected:
+            selected.discard("diabetes_uncomplicated")
+        if "liver_disease" in selected:
             selected.discard("mild_liver_disease")
-        if "metastatic_solid_tumor" in selected:
-            selected.discard("cancer_malignancy")
+        if "metastatic_cancer" in selected:
+            selected.discard("cancer")
 
-        return sum(CHARLSON_CATEGORIES[cat]["weight"] for cat in selected)
+        total = 0
+        for cat in selected:
+            weights = COMORBIDITY_WEIGHTS.get(cat)
+            if weights and weights[0] is not None:
+                total += weights[0]
+        return total
+
+    def compute_elixhauser(self):
+        """Compute Elixhauser Comorbidity Index (van Walraven weighting)."""
+        selected = set(c.value for c in self.comorbidities)
+
+        # Elixhauser hierarchical rules
+        if "diabetes_complicated" in selected:
+            selected.discard("diabetes_uncomplicated")
+        if "hypertension_complicated" in selected:
+            selected.discard("hypertension_uncomplicated")
+
+        total = 0
+        for cat in selected:
+            weights = COMORBIDITY_WEIGHTS.get(cat)
+            if weights and weights[1] is not None:
+                total += weights[1]
+        return total
 
     @staticmethod
     def get_fields():
@@ -193,9 +192,12 @@ class PatientInput(BaseModel):
             {"name": "gender", "label": "Gender", "type": "select", "options": enum_options(GenderEnum)},
             {"name": "race", "label": "Race", "type": "select", "options": enum_options(RaceEnum)},
             {"name": "time_in_hospital", "label": "Time in Hospital (days)", "type": "number", "min": 1},
-            {"name": "admission_type", "label": "Admission Type", "type": "select", "options": enum_options(AdmissionTypeEnum)},
-            {"name": "admission_source", "label": "Admission Source", "type": "select", "options": enum_options(AdmissionSourceEnum)},
-            {"name": "discharge_group", "label": "Discharge Disposition", "type": "select", "options": enum_options(DischargeGroupEnum)},
+            {"name": "admission_type", "label": "Admission Type", "type": "select",
+             "options": enum_options(AdmissionTypeEnum)},
+            {"name": "admission_source", "label": "Admission Source", "type": "select",
+             "options": enum_options(AdmissionSourceEnum)},
+            {"name": "discharge_group", "label": "Discharge Disposition", "type": "select",
+             "options": enum_options(DischargeGroupEnum)},
             {"name": "num_lab_procedures", "label": "Number of Lab Procedures", "type": "number", "min": 0},
             {"name": "num_procedures", "label": "Number of Procedures", "type": "number", "min": 0},
             {"name": "num_medications", "label": "Number of Medications", "type": "number", "min": 0},
@@ -203,8 +205,8 @@ class PatientInput(BaseModel):
             {"name": "number_inpatient", "label": "Prior Inpatient Visits", "type": "number", "min": 0},
             {"name": "number_outpatient", "label": "Prior Outpatient Visits", "type": "number", "min": 0},
             {"name": "number_emergency", "label": "Prior Emergency Visits", "type": "number", "min": 0},
-            {"name": "charlson_categories", "label": "Comorbidities (Charlson Index)", "type": "checkbox_group",
-             "options": [{"value": m.value, "label": m.name.replace("_", " ").title()} for m in CharlsonCategoryEnum]},
+            {"name": "comorbidities", "label": "Comorbidities (Charlson + Elixhauser)", "type": "checkbox_group",
+             "options": [{"value": m.value, "label": m.name.replace("_", " ").title()} for m in ComorbidityEnum]},
         ]
 
     def to_raw_df(self) -> pd.DataFrame:
@@ -221,6 +223,7 @@ class PatientInput(BaseModel):
             "number_outpatient": self.number_outpatient,
             "number_emergency": self.number_emergency,
             "cci_score": self.compute_cci(),
+            "elixhauser_score": self.compute_elixhauser(),
             # Engineered features (same logic as training)
             "total_prior_visits": self.number_inpatient + self.number_outpatient + self.number_emergency,
             "has_prior_inpatient": int(self.number_inpatient > 0),

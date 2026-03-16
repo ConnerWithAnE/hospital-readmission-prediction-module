@@ -1,245 +1,259 @@
-import pandas as pd
 
-CHARLSON_CATEGORIES = {
-    "myocardial_infarction": {
-        "weight": 1,
-        "icd9_ranges": [(410, 412)],
-        "icd9_exact": ["410", "411", "412"],
-    },
-    "congestive_heart_failure": {
-        "weight": 1,
-        "icd9_ranges": [(428, 428)],
-        "icd9_prefixes": ["428"],
-    },
-    "peripheral_vascular_disease": {
-        "weight": 1,
-        "icd9_ranges": [(440, 441)],
-        "icd9_prefixes": ["440", "441", "443.9", "785.4"],
-        "icd9_exact": ["V43.4"],
-    },
-    "cerebrovascular_disease": {
-        "weight": 1,
-        "icd9_ranges": [(430, 438)],
-        "icd9_prefixes": [],
-    },
-    "dementia": {
-        "weight": 1,
-        "icd9_ranges": [(290, 290)],
-        "icd9_prefixes": ["290"],
-    },
-    "chronic_pulmonary_disease": {
-        "weight": 1,
-        "icd9_ranges": [(490, 496), (500, 505)],
-        "icd9_prefixes": ["506.4"],
-    },
-    "rheumatic_connective_tissue": {
-        "weight": 1,
-        "icd9_prefixes": ["710.0", "710.1", "710.4", "714.0", "714.1", "714.2", "714.81", "725"],
-        "icd9_ranges": [],
-    },
-    "peptic_ulcer_disease": {
-        "weight": 1,
-        "icd9_ranges": [(531, 534)],
-        "icd9_prefixes": [],
-    },
-    "mild_liver_disease": {
-        "weight": 1,
-        "icd9_prefixes": ["571.2", "571.4", "571.5", "571.6"],
-        "icd9_ranges": [],
-    },
-    "diabetes_no_complications": {
-        "weight": 1,
-        "icd9_prefixes": ["250.0", "250.1", "250.2", "250.3"],
-        "icd9_ranges": [],
-    },
-    "diabetes_with_complications": {
-        "weight": 2,
-        "icd9_prefixes": ["250.4", "250.5", "250.6", "250.7", "250.8", "250.9"],
-        "icd9_ranges": [],
-    },
-    "hemiplegia_paraplegia": {
-        "weight": 2,
-        "icd9_prefixes": ["342", "344.1"],
-        "icd9_ranges": [(342, 342)],
-    },
-    "renal_disease": {
-        "weight": 2,
-        "icd9_prefixes": ["582", "583", "585", "586", "588"],
-        "icd9_ranges": [(582, 583), (585, 586)],
-        "icd9_exact": ["V42.0", "V45.1", "V56"],
-    },
-    "cancer_malignancy": {
-        "weight": 2,
-        "icd9_ranges": [(140, 172), (174, 195), (200, 208)],
-        "icd9_prefixes": [],
-    },
-    "moderate_severe_liver_disease": {
-        "weight": 3,
-        "icd9_prefixes": ["572.2", "572.3", "572.4", "572.5", "572.6", "572.7", "572.8"],
-        "icd9_ranges": [],
-    },
-    "metastatic_solid_tumor": {
-        "weight": 6,
-        "icd9_ranges": [(196, 199)],
-        "icd9_prefixes": [],
-    },
-    "aids_hiv": {
-        "weight": 6,
-        "icd9_ranges": [(42, 44)],
-        "icd9_prefixes": ["042", "043", "044"],
-    },
+"""Comorbidity index computation using comorbidipy.
+
+Computes both Charlson Comorbidity Index (CCI) and Elixhauser Comorbidity Index
+from ICD-9 diagnosis codes using validated mappings (Quan variant).
+"""
+
+import pandas as pd
+import polars as pl
+from comorbidipy import comorbidity
+
+# ---------------------------------------------------------------------------
+# comorbidipy short column names → readable names
+# ---------------------------------------------------------------------------
+
+CHARLSON_COL_MAP = {
+    "ami": "myocardial_infarction",
+    "chf": "congestive_heart_failure",
+    "pvd": "peripheral_vascular_disease",
+    "cevd": "cerebrovascular_disease",
+    "dementia": "dementia",
+    "copd": "chronic_pulmonary_disease",
+    "rheumd": "rheumatic_disease",
+    "pud": "peptic_ulcer_disease",
+    "mld": "mild_liver_disease",
+    "diab": "diabetes_uncomplicated",
+    "diabwc": "diabetes_complicated",
+    "hp": "hemiplegia_paraplegia",
+    "rend": "renal_disease",
+    "canc": "cancer",
+    "msld": "moderate_severe_liver_disease",
+    "metacanc": "metastatic_cancer",
+    "aids": "aids_hiv",
 }
 
-def clean_icd9_code(code):
-    """
-    Clean and standardize an ICD-9 code from the UCI dataset.
-    """
-    if pd.isna(code) or str(code).strip() in ("?", "", "nan", "None"):
-        return None
+ELIXHAUSER_COL_MAP = {
+    "chf": "congestive_heart_failure",
+    "carit": "cardiac_arrhythmias",
+    "valv": "valvular_disease",
+    "pcd": "pulmonary_circulation_disorders",
+    "pvd": "peripheral_vascular_disease",
+    "hypunc": "hypertension_uncomplicated",
+    "hypc": "hypertension_complicated",
+    "para": "paralysis",
+    "ond": "other_neurological_disorders",
+    "cpd": "chronic_pulmonary_disease",
+    "diabunc": "diabetes_uncomplicated",
+    "diabc": "diabetes_complicated",
+    "hypothy": "hypothyroidism",
+    "rf": "renal_failure",
+    "ld": "liver_disease",
+    "pud": "peptic_ulcer_disease",
+    "aids": "aids_hiv",
+    "lymph": "lymphoma",
+    "metacanc": "metastatic_cancer",
+    "solidtum": "solid_tumor",
+    "rheumd": "rheumatic_disease",
+    "coag": "coagulopathy",
+    "obes": "obesity",
+    "wloss": "weight_loss",
+    "fed": "fluid_electrolyte_disorders",
+    "blane": "blood_loss_anemia",
+    "dane": "deficiency_anemias",
+    "alcohol": "alcohol_abuse",
+    "drug": "drug_abuse",
+    "psycho": "psychoses",
+    "depre": "depression",
+}
 
-    code = str(code).strip()
-    return code
+# ---------------------------------------------------------------------------
+# Weight tables for manual score computation (used by prediction endpoint)
+# ---------------------------------------------------------------------------
+
+CHARLSON_WEIGHTS = {
+    "myocardial_infarction": 1,
+    "congestive_heart_failure": 1,
+    "peripheral_vascular_disease": 1,
+    "cerebrovascular_disease": 1,
+    "dementia": 1,
+    "chronic_pulmonary_disease": 1,
+    "rheumatic_disease": 1,
+    "peptic_ulcer_disease": 1,
+    "mild_liver_disease": 1,
+    "diabetes_uncomplicated": 1,
+    "diabetes_complicated": 2,
+    "hemiplegia_paraplegia": 2,
+    "renal_disease": 2,
+    "cancer": 2,
+    "moderate_severe_liver_disease": 3,
+    "metastatic_cancer": 6,
+    "aids_hiv": 6,
+}
+
+ELIXHAUSER_VW_WEIGHTS = {
+    "congestive_heart_failure": 7,
+    "cardiac_arrhythmias": 5,
+    "valvular_disease": -1,
+    "pulmonary_circulation_disorders": 4,
+    "peripheral_vascular_disease": 2,
+    "hypertension_uncomplicated": 0,
+    "hypertension_complicated": 0,
+    "paralysis": 7,
+    "other_neurological_disorders": 6,
+    "chronic_pulmonary_disease": 3,
+    "diabetes_uncomplicated": 0,
+    "diabetes_complicated": 0,
+    "hypothyroidism": 0,
+    "renal_failure": 5,
+    "liver_disease": 11,
+    "peptic_ulcer_disease": 0,
+    "aids_hiv": 0,
+    "lymphoma": 9,
+    "metastatic_cancer": 12,
+    "solid_tumor": 4,
+    "rheumatic_disease": 0,
+    "coagulopathy": 3,
+    "obesity": -4,
+    "weight_loss": 6,
+    "fluid_electrolyte_disorders": 5,
+    "blood_loss_anemia": -2,
+    "deficiency_anemias": -2,
+    "alcohol_abuse": 0,
+    "drug_abuse": -7,
+    "psychoses": 0,
+    "depression": -3,
+}
 
 
-def get_numeric_prefix(code):
-    """
-    Extract the numeric prefix of an ICD-9 code for range matching.
-    Returns the integer portion before any decimal point.
-    Returns None for V-codes and E-codes (handled separately).
-    """
-    if code is None:
-        return None
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
 
-    if code.startswith(("V", "v", "E", "e")):
-        return None
+def _to_long_format(df, diag_columns):
+    """Melt wide-format diagnosis columns into long format for comorbidipy."""
+    df_temp = df[diag_columns].copy()
+    df_temp["_row_id"] = range(len(df))
 
-    try:
-        # Extract the integer part before the decimal
-        numeric_part = code.split(".")[0]
-        return int(numeric_part)
-    except (ValueError, IndexError):
-        return None
-
-
-def check_code_in_category(code, category_def):
-    """
-    Check if a single ICD-9 code falls into a Charlson category.
-
-    Matching logic:
-    1. Check exact matches first (for V-codes and special cases)
-    2. Check prefix matches (e.g., "250.4" matches codes starting with "250.4")
-    3. Check numeric range matches (e.g., 410-412 matches 410, 411, 412 and subcodes)
-    """
-    if code is None:
-        return False
-
-    # 1. Exact matches (handles V-codes, E-codes, special cases)
-    exact_codes = category_def.get("icd9_exact", [])
-    if code in exact_codes or code.upper() in [c.upper() for c in exact_codes]:
-        return True
-
-    # 2. Prefix matches
-    prefixes = category_def.get("icd9_prefixes", [])
-    for prefix in prefixes:
-        if code.startswith(prefix):
-            return True
-
-    # 3. Numeric range matches
-    numeric_val = get_numeric_prefix(code)
-    if numeric_val is not None:
-        ranges = category_def.get("icd9_ranges", [])
-        for range_start, range_end in ranges:
-            if range_start <= numeric_val <= range_end:
-                return True
-
-    return False
-
-def compute_cci_for_codes(codes):
-    """
-    Compute the Charlson Comorbidity Index for a list of ICD-9 codes.
-
-    Rules:
-    - Each category is counted at most once (even if multiple codes match)
-    - If both 'diabetes_no_complications' and 'diabetes_with_complications'
-      are flagged, only the higher-weighted one counts
-    - Same hierarchy for mild vs moderate/severe liver disease
-    - Same hierarchy for cancer vs metastatic tumor
-    """
-    matched_categories = set()
-
-    for code in codes:
-        cleaned = clean_icd9_code(code)
-        if cleaned is None:
-            continue
-
-        for category_name, category_def in CHARLSON_CATEGORIES.items():
-            if check_code_in_category(cleaned, category_def):
-                matched_categories.add(category_name)
-
-    # Apply hierarchical rules:
-    # If patient has complicated diabetes, remove uncomplicated
-    if "diabetes_with_complications" in matched_categories:
-        matched_categories.discard("diabetes_no_complications")
-
-    # If patient has moderate/severe liver disease, remove mild
-    if "moderate_severe_liver_disease" in matched_categories:
-        matched_categories.discard("mild_liver_disease")
-
-    # If patient has metastatic tumor, remove non-metastatic cancer
-    if "metastatic_solid_tumor" in matched_categories:
-        matched_categories.discard("cancer_malignancy")
-
-    # Sum the weights
-    total_cci = sum(
-        CHARLSON_CATEGORIES[cat]["weight"] for cat in matched_categories
+    long = df_temp.melt(
+        id_vars="_row_id",
+        value_vars=diag_columns,
+        var_name="_diag_col",
+        value_name="code",
     )
 
-    return total_cci, matched_categories
+    # Drop missing / invalid codes
+    long = long.dropna(subset=["code"])
+    long["code"] = long["code"].astype(str).str.strip()
+    long = long[~long["code"].isin(["?", "", "nan", "None"])]
 
-def add_cci_to_dataframe(df, diag_columns=None):
+    # Strip dots — comorbidipy expects ICD-9 codes without dots
+    long["code"] = long["code"].str.replace(".", "", regex=False)
+
+    # Build Polars DataFrame directly to avoid pyarrow dependency
+    return pl.DataFrame({
+        "_row_id": long["_row_id"].to_numpy(),
+        "code": long["code"].to_list(),
+    })
+
+
+def _rename_and_select(result_pd, col_map, score_col, prefix):
+    """Rename comorbidipy short column names and select relevant columns."""
+    rename = {"comorbidity_score": score_col}
+    for short, readable in col_map.items():
+        if short in result_pd.columns:
+            rename[short] = f"{prefix}{readable}"
+    result_pd = result_pd.rename(columns=rename)
+
+    keep = ["_row_id", score_col] + [
+        f"{prefix}{readable}"
+        for short, readable in col_map.items()
+        if f"{prefix}{readable}" in result_pd.columns
+    ]
+    return result_pd[[c for c in keep if c in result_pd.columns]]
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def add_comorbidities_to_dataframe(df, diag_columns=None):
     """
-    Add CCI score and individual category flags to a DataFrame.
+    Add Charlson and Elixhauser comorbidity scores and binary flags.
 
     Parameters
     ----------
     df : pd.DataFrame
-        The UCI Diabetes dataset (or any DataFrame with ICD-9 diagnosis columns)
-    diag_columns : list of str, optional
-        Column names containing ICD-9 codes. Defaults to ['diag_1', 'diag_2', 'diag_3']
+        DataFrame with ICD-9 diagnosis columns.
+    diag_columns : list[str], optional
+        Columns containing ICD-9 codes. Defaults to ['diag_1', 'diag_2', 'diag_3'].
 
     Returns
     -------
     pd.DataFrame
         Original DataFrame with added columns:
-        - 'cci_score': integer CCI score
-        - 'cci_<category_name>': binary flags for each Charlson category
+        - ``cci_score``  — Charlson Comorbidity Index (Charlson weighting)
+        - ``cci_<category>`` — binary flags for each Charlson category
+        - ``elixhauser_score`` — Elixhauser index (van Walraven weighting)
+        - ``elix_<category>`` — binary flags for each Elixhauser category
     """
     if diag_columns is None:
         diag_columns = ["diag_1", "diag_2", "diag_3"]
 
-    # Verify columns exist
     missing = [col for col in diag_columns if col not in df.columns]
     if missing:
         raise ValueError(f"Columns not found in DataFrame: {missing}")
 
-    # Compute CCI for each row
-    cci_scores = []
-    category_flags = {cat: [] for cat in CHARLSON_CATEGORIES}
+    long_pl = _to_long_format(df, diag_columns)
 
-    for _, row in df.iterrows():
-        codes = [row[col] for col in diag_columns]
-        score, matched = compute_cci_for_codes(codes)
-
-        cci_scores.append(score)
-        for cat in CHARLSON_CATEGORIES:
-            category_flags[cat].append(1 if cat in matched else 0)
-
-    # Add CCI score column
     df = df.copy()
-    df["cci_score"] = cci_scores
+    n_rows = len(df)
+    df["_row_id"] = range(n_rows)
 
-    # Add individual category flag columns
-    for cat in CHARLSON_CATEGORIES:
-        df[f"cci_{cat}"] = category_flags[cat]
+    # Guard: if no valid diagnosis codes exist, return zero-filled columns
+    if long_pl.height == 0:
+        for readable in CHARLSON_COL_MAP.values():
+            df[f"cci_{readable}"] = 0
+        df["cci_score"] = 0
+        for readable in ELIXHAUSER_COL_MAP.values():
+            df[f"elix_{readable}"] = 0
+        df["elixhauser_score"] = 0
+        return df.drop(columns=["_row_id"])
 
-    return df
+    # --- Charlson ---
+    charlson_pd = comorbidity(
+        long_pl,
+        id_col="_row_id",
+        code_col="code",
+        score="charlson",
+        icd="icd9",
+        variant="quan",
+        weighting="charlson",
+    ).to_pandas()
+    charlson_pd = _rename_and_select(charlson_pd, CHARLSON_COL_MAP, "cci_score", "cci_")
+
+    # --- Elixhauser ---
+    elix_pd = comorbidity(
+        long_pl,
+        id_col="_row_id",
+        code_col="code",
+        score="elixhauser",
+        icd="icd9",
+        variant="quan",
+        weighting="van_walraven",
+    ).to_pandas()
+    elix_pd = _rename_and_select(elix_pd, ELIXHAUSER_COL_MAP, "elixhauser_score", "elix_")
+
+    # --- Merge back ---
+    df = df.merge(charlson_pd, on="_row_id", how="left")
+    df = df.merge(elix_pd, on="_row_id", how="left")
+
+    # Fill NaN for rows with no valid ICD codes
+    fill_cols = [c for c in df.columns if c.startswith(("cci_", "elix_", "elixhauser_"))]
+    df[fill_cols] = df[fill_cols].fillna(0).astype(int)
+
+    return df.drop(columns=["_row_id"])
+
+
+# Backward-compatible alias
+add_cci_to_dataframe = add_comorbidities_to_dataframe

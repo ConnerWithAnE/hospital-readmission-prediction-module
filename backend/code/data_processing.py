@@ -1,6 +1,15 @@
 import base64
 import io
+import sys
 from pathlib import Path
+
+# Allow running this file directly (python data_processing.py) by fixing the
+# package path before relative imports are resolved.
+if __name__ == "__main__" and __package__ is None:
+    _backend = str(Path(__file__).resolve().parent.parent)
+    if _backend not in sys.path:
+        sys.path.insert(0, _backend)
+    __package__ = "code"
 
 import joblib
 import numpy as np
@@ -24,7 +33,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from ucimlrepo import fetch_ucirepo
 
-from .cci import add_cci_to_dataframe
+from .cci import add_comorbidities_to_dataframe
 from .data_maps import keep, admission_type_map, discharge_disposition_map, age_map, admission_source_map
 
 
@@ -40,7 +49,10 @@ class PredictionModel:
 
         df["readmitted"] = self.diabetes_130_us_hospitals.data.targets["readmitted"]
 
-        df = add_cci_to_dataframe(df)
+        df = add_comorbidities_to_dataframe(df)
+
+        # Remove deceased cases
+        df = df[df["discharge_status"] != "Deceased"]
 
         df = df[keep].copy()
 
@@ -53,6 +65,7 @@ class PredictionModel:
 
         # Drop birth as they are different compared to an emergency or other issue (frequent visits)
         df = df[df["admission_type"] != "birth"]
+
 
         df['age'] = df['age'].map(age_map)
         df['race'] = df['race'].fillna("unknown")
@@ -290,3 +303,62 @@ class PredictionModel:
             "AUROC": auroc,
             "AUPRC": auprc,
         }
+
+    @classmethod
+    def train_and_test(cls):
+        """Train a fresh model and print evaluation metrics."""
+        instance = cls()
+        print("Refining dataset...")
+        refined_data = instance.refine_dataset()
+        print(f"Dataset: {refined_data.shape[0]} rows, {refined_data.shape[1]} features")
+
+        instance.get_split(refined_data)
+        print(f"Train: {len(instance.X_train)}, Test: {len(instance.X_test)}")
+
+        print("Training stacking classifier...")
+        base_models = [
+            ('lr', LogisticRegression(C=1.0, max_iter=2000, solver='lbfgs')),
+            ('lgbm', LGBMClassifier(
+                n_estimators=300, num_leaves=31, learning_rate=0.05,
+                subsample=0.8, colsample_bytree=0.8, is_unbalance=True
+            )),
+            ('rf', RandomForestClassifier(
+                n_estimators=200, max_depth=12, class_weight='balanced'
+            ))
+        ]
+
+        instance.model = StackingClassifier(
+            estimators=base_models,
+            final_estimator=LogisticRegression(),
+            cv=5,
+            stack_method='predict_proba',
+            passthrough=False
+        )
+        instance.model.fit(instance.X_train, instance.y_train)
+        print("Training complete.")
+
+        # --- Evaluate on test set ---
+        y_proba = instance.model.predict_proba(instance.X_test)[:, 1]
+
+        auroc = roc_auc_score(instance.y_test, y_proba)
+        auprc = average_precision_score(instance.y_test, y_proba)
+        print(f"\nAUROC: {auroc:.3f}")
+        print(f"AUPRC: {auprc:.3f}")
+
+        precision, recall, thresholds = precision_recall_curve(instance.y_test, y_proba)
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+        best_threshold = thresholds[f1_scores.argmax()]
+        print(f"Best threshold (by F1): {best_threshold:.3f}")
+
+        y_pred = (y_proba >= best_threshold).astype(int)
+        print(classification_report(instance.y_test, y_pred, target_names=['No Readmit', 'Readmit']))
+
+        # Save model
+        instance.save_model()
+        print(f"Model saved to {MODELS_DIR}")
+
+        return instance
+
+
+if __name__ == "__main__":
+    PredictionModel.train_and_test()

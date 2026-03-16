@@ -113,4 +113,4 @@ admission_source_map = {
 
 keep = ["age", "gender", "race", "time_in_hospital", "admission_source_id", "num_lab_procedures",
           "num_procedures", "num_medications", "number_diagnoses", "admission_type_id", "discharge_disposition_id",
-          "number_inpatient", "number_outpatient", "number_emergency", "cci_score", "readmitted"]
+          "number_inpatient", "number_outpatient", "number_emergency", "cci_score", "elixhauser_score", "readmitted"]
