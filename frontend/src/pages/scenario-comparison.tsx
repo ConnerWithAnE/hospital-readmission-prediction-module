@@ -229,7 +229,7 @@ export function ScenarioComparisonPage() {
 
     useEffect(() => {
         SCENARIOS.forEach((scenario, i) => {
-            fetch("http://127.0.0.1:8000/api/predict", {
+            fetch("/api/predict", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(scenario.input),

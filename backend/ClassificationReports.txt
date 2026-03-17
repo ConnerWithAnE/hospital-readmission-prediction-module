@@ -1,0 +1,63 @@
+V2 Scores
+
+             precision    recall  f1-score   support
+
+  No Readmit       0.77      0.33      0.47     10972
+     Readmit       0.53      0.88      0.66      9380
+
+    accuracy                           0.59     20352
+   macro avg       0.65      0.61      0.56     20352
+weighted avg       0.66      0.59      0.56     20352
+
+V2 Post Medium Impact
+
+              precision    recall  f1-score   support
+
+  No Readmit       0.78      0.30      0.43     10972
+     Readmit       0.52      0.90      0.66      9380
+
+    accuracy                           0.58     20352
+   macro avg       0.65      0.60      0.55     20352
+weighted avg       0.66      0.58      0.54     20352
+
+V2 Post High Impact, Revert Medium Impact
+
+              precision    recall  f1-score   support
+
+  No Readmit       0.77      0.33      0.46     10972
+     Readmit       0.53      0.89      0.66      9380
+
+    accuracy                           0.59     20352
+   macro avg       0.65      0.61      0.56     20352
+weighted avg       0.66      0.59      0.56     20352
+
+
+V2 Post Medication Checks
+
+              precision    recall  f1-score   support
+
+  No Readmit       0.76      0.37      0.50     10972
+     Readmit       0.54      0.86      0.66      9380
+
+    accuracy                           0.60     20352
+   macro avg       0.65      0.62      0.58     20352
+weighted avg       0.66      0.60      0.58     20352
+
+
+              precision    recall  f1-score   support
+
+  No Readmit       0.76      0.37      0.49     10972
+     Readmit       0.54      0.87      0.67      9380
+
+    accuracy                           0.60     20352
+   macro avg       0.65      0.62      0.58     20352
+weighted avg       0.66      0.60      0.57     20352
+
+              precision    recall  f1-score   support
+
+  No Readmit       0.76      0.27      0.40     10504
+     Readmit       0.53      0.90      0.66      9363
+
+    accuracy                           0.57     19867
+   macro avg       0.64      0.59      0.53     19867
+weighted avg       0.65      0.57      0.53     19867

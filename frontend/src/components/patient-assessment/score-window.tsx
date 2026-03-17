@@ -7,12 +7,14 @@ interface ScoreWindowProps {
     result: PredictionResult | null
 }
 
-const RISK_COLORS = {
+const RISK_COLORS: Record<string, string> = {
+    very_low: "text-green-600",
     low: "text-green-500",
     moderate: "text-yellow-500",
     high: "text-red-500",
+    very_high: "text-red-700",
 }
-const RISK_HEX = { low: "#22c55e", moderate: "#eab308", high: "#ef4444" }
+const RISK_HEX: Record<string, string> = { very_low: "#16a34a", low: "#22c55e", moderate: "#eab308", high: "#ef4444", very_high: "#b91c1c" }
 const POSITIVE_COLOR = "#ef4444"
 const NEGATIVE_COLOR = "#22c55e"
 

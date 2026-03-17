@@ -4,7 +4,7 @@ import ScoreWindow from "@/components/patient-assessment/score-window";
 
 export interface PredictionResult {
     risk_score: number
-    risk_category: "low" | "moderate" | "high"
+    risk_category: "very_low" | "low" | "moderate" | "high" | "very_high"
     contributing_factors: {
         feature: string
         value: number

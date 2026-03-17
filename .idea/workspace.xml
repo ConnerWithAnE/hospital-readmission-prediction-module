@@ -6,10 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/data_maps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_maps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/server/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_improvement_plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/feature_improvement_plan.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/X_test.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/X_train.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/encoder.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/stacking_readmit_model.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/y_test.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/y_train.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +54,7 @@
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;elix&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models/v1&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -55,11 +62,11 @@
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v1" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2-1_tuning" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_pre_tuning" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_post_medication_fix" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_post_high_impact" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\datasets\deprecated" />
-      <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_post_medium_impact" />
     </key>
   </component>
   <component name="RunManager" selected="Python.main">
@@ -166,7 +173,8 @@
       <workItem from="1773761484976" duration="58000" />
       <workItem from="1773761558828" duration="144000" />
       <workItem from="1773761715393" duration="164000" />
-      <workItem from="1773761901586" duration="10107000" />
+      <workItem from="1773761901586" duration="11982000" />
+      <workItem from="1773776884798" duration="6669000" />
     </task>
     <servers />
   </component>
