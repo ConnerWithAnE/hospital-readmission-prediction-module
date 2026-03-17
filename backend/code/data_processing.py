@@ -84,17 +84,8 @@ class PredictionModel:
             df["number_diagnoses"] / stay
         )
 
-        # Age-adjusted CCI (original Charlson adds 1 point per decade over 40)
-        df["age_adjusted_cci"] = df["cci_score"] + np.maximum(0, df["age"] - 4)
-
-        # Age x utilization interactions (frailty proxies)
-        df["age_x_inpatient"] = df["age"] * df["number_inpatient"]
-        df["age_x_medications"] = df["age"] * df["num_medications"]
-        df["age_x_cci"] = df["age"] * df["cci_score"]
-
-        # Non-linear age thresholds
-        df["age_over_70"] = (df["age"] >= 7).astype(int)
-        df["age_over_80"] = (df["age"] >= 8).astype(int)
+        # df["inpatient_x_emergency"] = df["number_inpatient"] * df["number_emergency"]
+        # df["total_visits"] = df["number_inpatient"] + df["number_outpatient"] + df["number_emergency"]
 
 
         encoded_values = self.encoder.fit_transform(df[['race', 'discharge_group', 'admission_type', 'admission_source']])

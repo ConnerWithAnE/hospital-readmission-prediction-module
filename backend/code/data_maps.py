@@ -113,4 +113,9 @@ admission_source_map = {
 
 keep = ["age", "gender", "race", "time_in_hospital", "admission_source_id", "num_lab_procedures",
           "num_procedures", "num_medications", "number_diagnoses", "admission_type_id", "discharge_disposition_id",
-          "number_inpatient", "number_outpatient", "number_emergency", "cci_score", "elixhauser_score", "readmitted"]
+          "number_inpatient", "number_outpatient", "number_emergency", "cci_score", "elixhauser_score",
+          # Individual comorbidity flags — clinically strong readmission predictors
+          "cci_congestive_heart_failure", "cci_renal_disease", "cci_chronic_pulmonary_disease",
+          "elix_depression", "elix_fluid_electrolyte_disorders", "elix_renal_failure",
+          "elix_coagulopathy", "elix_weight_loss",
+          "readmitted"]
