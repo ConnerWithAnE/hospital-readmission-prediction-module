@@ -42,6 +42,47 @@ class AdmissionSourceEnum(str, Enum):
     unknown = "unknown"
 
 
+class A1CResultEnum(str, Enum):
+    not_measured = "not_measured"
+    norm = "Norm"
+    gt7 = ">7"
+    gt8 = ">8"
+
+
+class GluSerumEnum(str, Enum):
+    not_measured = "not_measured"
+    norm = "Norm"
+    gt200 = ">200"
+    gt300 = ">300"
+
+
+class MedStatusEnum(str, Enum):
+    no = "No"
+    steady = "Steady"
+    down = "Down"
+    up = "Up"
+
+
+class DiagCategoryEnum(str, Enum):
+    infectious = "infectious"
+    neoplasms = "neoplasms"
+    endocrine = "endocrine"
+    blood = "blood"
+    mental = "mental"
+    nervous = "nervous"
+    circulatory = "circulatory"
+    respiratory = "respiratory"
+    digestive = "digestive"
+    genitourinary = "genitourinary"
+    skin = "skin"
+    musculoskeletal = "musculoskeletal"
+    symptoms = "symptoms"
+    injury = "injury"
+    injury_external = "injury_external"
+    supplementary = "supplementary"
+    unknown = "unknown"
+
+
 # ---------------------------------------------------------------------------
 # Unified comorbidity weights: (charlson_weight, elixhauser_van_walraven_weight)
 # None = condition is not part of that index.
@@ -145,6 +186,15 @@ class PatientInput(BaseModel):
     number_outpatient: int = Field(ge=0)
     number_emergency: int = Field(ge=0)
     comorbidities: list[ComorbidityEnum] = Field(default_factory=list)
+    a1c_result: A1CResultEnum = A1CResultEnum.not_measured
+    max_glu_serum: GluSerumEnum = GluSerumEnum.not_measured
+    diabetes_med: bool = False
+    med_change: bool = False
+    insulin: MedStatusEnum = MedStatusEnum.no
+    metformin: MedStatusEnum = MedStatusEnum.no
+    diag_category: DiagCategoryEnum = DiagCategoryEnum.unknown
+    n_active_meds: int = Field(ge=0, default=0)
+    n_med_changes: int = Field(ge=0, default=0)
 
     def compute_cci(self):
         """Compute Charlson Comorbidity Index from selected comorbidities."""
@@ -207,10 +257,47 @@ class PatientInput(BaseModel):
             {"name": "number_emergency", "label": "Prior Emergency Visits", "type": "number", "min": 0},
             {"name": "comorbidities", "label": "Comorbidities (Charlson + Elixhauser)", "type": "checkbox_group",
              "options": [{"value": m.value, "label": m.name.replace("_", " ").title()} for m in ComorbidityEnum]},
+            {"name": "a1c_result", "label": "A1C Result", "type": "select",
+             "options": [{"value": "not_measured", "label": "Not Measured"},
+                         {"value": "Norm", "label": "Normal"},
+                         {"value": ">7", "label": "> 7%"},
+                         {"value": ">8", "label": "> 8%"}]},
+            {"name": "max_glu_serum", "label": "Max Glucose Serum", "type": "select",
+             "options": [{"value": "not_measured", "label": "Not Measured"},
+                         {"value": "Norm", "label": "Normal"},
+                         {"value": ">200", "label": "> 200 mg/dL"},
+                         {"value": ">300", "label": "> 300 mg/dL"}]},
+            {"name": "diabetes_med", "label": "On Diabetes Medication", "type": "boolean"},
+            {"name": "med_change", "label": "Medication Changed During Visit", "type": "boolean"},
+            {"name": "insulin", "label": "Insulin Status", "type": "select",
+             "options": enum_options(MedStatusEnum)},
+            {"name": "metformin", "label": "Metformin Status", "type": "select",
+             "options": enum_options(MedStatusEnum)},
+            {"name": "diag_category", "label": "Primary Diagnosis Category", "type": "select",
+             "options": enum_options(DiagCategoryEnum)},
+            {"name": "n_active_meds", "label": "Number of Active Diabetes Medications", "type": "number", "min": 0},
+            {"name": "n_med_changes", "label": "Number of Medication Changes", "type": "number", "min": 0},
         ]
 
     def to_raw_df(self) -> pd.DataFrame:
         """Convert to a DataFrame with categorical columns ready for the encoder."""
+        # Encode medication status ordinally (same mapping as training)
+        med_ordinal = {"No": 0, "Steady": 1, "Down": 2, "Up": 3}
+        insulin_val = med_ordinal[self.insulin.value]
+        metformin_val = med_ordinal[self.metformin.value]
+
+        # Encode A1C and glucose (same mapping as training)
+        a1c_map = {"not_measured": -1, "Norm": 0, ">7": 1, ">8": 2}
+        glu_map = {"not_measured": -1, "Norm": 0, ">200": 1, ">300": 2}
+        a1c_val = a1c_map[self.a1c_result.value]
+        glu_val = glu_map[self.max_glu_serum.value]
+
+        # Individual comorbidity flags
+        selected = set(c.value for c in self.comorbidities)
+
+        total_prior = self.number_inpatient + self.number_outpatient + self.number_emergency
+        any_dose_up = int(insulin_val == 3 or metformin_val == 3 or self.n_med_changes > 0)
+
         row = {
             "age": self.age,
             "gender": 1 if self.gender == GenderEnum.male else 0,
@@ -224,15 +311,40 @@ class PatientInput(BaseModel):
             "number_emergency": self.number_emergency,
             "cci_score": self.compute_cci(),
             "elixhauser_score": self.compute_elixhauser(),
+            # Individual comorbidity flags
+            "cci_congestive_heart_failure": int("congestive_heart_failure" in selected),
+            "cci_renal_disease": int("renal_disease" in selected),
+            "cci_chronic_pulmonary_disease": int("chronic_pulmonary_disease" in selected),
+            "elix_depression": int("depression" in selected),
+            "elix_fluid_electrolyte_disorders": int("fluid_electrolyte_disorders" in selected),
+            "elix_renal_failure": int("renal_disease" in selected),
+            "elix_coagulopathy": int("coagulopathy" in selected),
+            "elix_weight_loss": int("weight_loss" in selected),
+            # Diabetes-specific clinical columns
+            "A1Cresult": a1c_val,
+            "max_glu_serum": glu_val,
+            "diabetesMed": int(self.diabetes_med),
+            "change": int(self.med_change),
+            # Individual medication status
+            "insulin": insulin_val,
+            "metformin": metformin_val,
+            # Aggregate medication features
+            "n_active_meds": self.n_active_meds,
+            "n_med_changes": self.n_med_changes,
+            "any_dose_up": any_dose_up,
             # Engineered features (same logic as training)
-            "total_prior_visits": self.number_inpatient + self.number_outpatient + self.number_emergency,
+            "total_prior_visits": total_prior,
             "has_prior_inpatient": int(self.number_inpatient > 0),
             "meds_per_day": self.num_medications / (self.time_in_hospital + 1),
             "diag_per_day": 0 if self.number_diagnoses == 0 else self.number_diagnoses / (self.time_in_hospital or 1),
+            "lab_proc_ratio": self.num_lab_procedures / (self.num_procedures + 1),
+            "emergency_ratio": self.number_emergency / (total_prior + 1),
+            "insulin_x_a1c": insulin_val * a1c_val,
             # Categorical columns — the saved encoder will one-hot encode these
             "race": self.race.value,
             "discharge_group": self.discharge_group.value,
             "admission_type": self.admission_type.value,
             "admission_source": self.admission_source.value,
+            "diag_category": self.diag_category.value,
         }
         return pd.DataFrame([row])

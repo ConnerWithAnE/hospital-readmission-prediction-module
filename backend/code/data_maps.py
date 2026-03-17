@@ -118,4 +118,71 @@ keep = ["age", "gender", "race", "time_in_hospital", "admission_source_id", "num
           "cci_congestive_heart_failure", "cci_renal_disease", "cci_chronic_pulmonary_disease",
           "elix_depression", "elix_fluid_electrolyte_disorders", "elix_renal_failure",
           "elix_coagulopathy", "elix_weight_loss",
+          # Diabetes-specific clinical columns
+          "A1Cresult", "max_glu_serum", "diabetesMed", "change",
+          # Individual medication columns (high-variation only)
+          "insulin", "metformin",
+          # Primary diagnosis code for category grouping
+          "diag_1",
           "readmitted"]
+
+# All 23 medication columns used for aggregate feature computation
+med_columns = [
+    "metformin", "repaglinide", "nateglinide", "chlorpropamide", "glimepiride",
+    "acetohexamide", "glipizide", "glyburide", "tolbutamide", "pioglitazone",
+    "rosiglitazone", "acarbose", "miglitol", "troglitazone", "tolazamide",
+    "examide", "citoglipton", "insulin", "glyburide-metformin",
+    "glipizide-metformin", "glimepiride-pioglitazone", "metformin-rosiglitazone",
+    "metformin-pioglitazone",
+]
+
+
+def icd9_to_category(code):
+    """Map an ICD-9 code string to a clinical category."""
+    if not isinstance(code, str) or code in ("?", "", "nan", "None"):
+        return "unknown"
+    code = code.strip().replace(".", "")
+    # E/V codes
+    if code.startswith("E"):
+        return "injury_external"
+    if code.startswith("V"):
+        return "supplementary"
+    try:
+        numeric = float(code[:3])
+    except ValueError:
+        return "unknown"
+    if 1 <= numeric <= 139:
+        return "infectious"
+    if 140 <= numeric <= 239:
+        return "neoplasms"
+    if 240 <= numeric <= 279:
+        return "endocrine"  # includes diabetes (250)
+    if 280 <= numeric <= 289:
+        return "blood"
+    if 290 <= numeric <= 319:
+        return "mental"
+    if 320 <= numeric <= 389:
+        return "nervous"
+    if 390 <= numeric <= 459:
+        return "circulatory"
+    if 460 <= numeric <= 519:
+        return "respiratory"
+    if 520 <= numeric <= 579:
+        return "digestive"
+    if 580 <= numeric <= 629:
+        return "genitourinary"
+    if 630 <= numeric <= 679:
+        return "pregnancy"
+    if 680 <= numeric <= 709:
+        return "skin"
+    if 710 <= numeric <= 739:
+        return "musculoskeletal"
+    if 740 <= numeric <= 759:
+        return "congenital"
+    if 760 <= numeric <= 779:
+        return "perinatal"
+    if 780 <= numeric <= 799:
+        return "symptoms"
+    if 800 <= numeric <= 999:
+        return "injury"
+    return "unknown"

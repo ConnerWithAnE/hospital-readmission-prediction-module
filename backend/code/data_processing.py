@@ -25,6 +25,7 @@ from lightgbm import LGBMClassifier
 from sklearn.calibration import calibration_curve
 from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score, average_precision_score, precision_recall_curve, classification_report, \
     confusion_matrix
 
@@ -34,7 +35,7 @@ from sklearn.preprocessing import StandardScaler
 from ucimlrepo import fetch_ucirepo
 
 from .cci import add_comorbidities_to_dataframe
-from .data_maps import keep, admission_type_map, discharge_disposition_map, age_map, admission_source_map
+from .data_maps import keep, admission_type_map, discharge_disposition_map, age_map, admission_source_map, med_columns, icd9_to_category
 
 
 class PredictionModel:
@@ -51,8 +52,13 @@ class PredictionModel:
 
         df = add_comorbidities_to_dataframe(df)
 
+        # Aggregate medication features (computed before keep filter drops individual med columns)
+        med_df = df[med_columns]
+        df["n_active_meds"] = (med_df != "No").sum(axis=1)
+        df["n_med_changes"] = med_df.isin(["Up", "Down"]).sum(axis=1)
+        df["any_dose_up"] = med_df.isin(["Up"]).any(axis=1).astype(int)
 
-        df = df[keep].copy()
+        df = df[keep + ["n_active_meds", "n_med_changes", "any_dose_up"]].copy()
 
         df["gender"] = df["gender"].map({"Male": 1, "Female": 0}).fillna(-1)
 
@@ -63,11 +69,22 @@ class PredictionModel:
 
         # Drop birth as they are different compared to an emergency or other issue (frequent visits)
         df = df[df["admission_type"] != "birth"]
-        #df = df[df['discharge_group'] != "hospice_death"]
+        df = df[df['discharge_group'] != "hospice_death"]
 
 
         df['age'] = df['age'].map(age_map)
         df['race'] = df['race'].fillna("unknown")
+
+        # Diabetes-specific clinical columns
+        df["A1Cresult"] = df["A1Cresult"].map({"Norm": 0, ">7": 1, ">8": 2}).fillna(-1)
+        df["max_glu_serum"] = df["max_glu_serum"].map({"Norm": 0, ">200": 1, ">300": 2}).fillna(-1)
+        df["diabetesMed"] = df["diabetesMed"].map({"No": 0, "Yes": 1})
+        df["change"] = df["change"].map({"No": 0, "Ch": 1})
+
+        # Individual medication encoding (ordinal: No < Steady < Down < Up)
+        med_ordinal = {"No": 0, "Steady": 1, "Down": 2, "Up": 3}
+        df["insulin"] = df["insulin"].map(med_ordinal)
+        df["metformin"] = df["metformin"].map(med_ordinal)
 
         # Interaction: prior utilization intensity
         df["total_prior_visits"] = df["number_inpatient"] + df["number_outpatient"] + df["number_emergency"]
@@ -84,22 +101,32 @@ class PredictionModel:
             df["number_diagnoses"] / stay
         )
 
-        # df["inpatient_x_emergency"] = df["number_inpatient"] * df["number_emergency"]
-        # df["total_visits"] = df["number_inpatient"] + df["number_outpatient"] + df["number_emergency"]
+        # Lab-to-procedure ratio (diagnostic uncertainty signal)
+        df["lab_proc_ratio"] = df["num_lab_procedures"] / (df["num_procedures"] + 1)
 
+        # Emergency frequency ratio (emergency-heavy prior utilization)
+        df["emergency_ratio"] = df["number_emergency"] / (df["total_prior_visits"] + 1)
 
-        encoded_values = self.encoder.fit_transform(df[['race', 'discharge_group', 'admission_type', 'admission_source']])
-        new_cols = self.encoder.get_feature_names_out(['race', 'discharge_group', 'admission_type', 'admission_source'])
+        # Insulin x A1C interaction (poorly controlled despite treatment)
+        df["insulin_x_a1c"] = df["insulin"] * df["A1Cresult"]
+
+        # Primary diagnosis category from ICD-9 code
+        df["diag_category"] = df["diag_1"].apply(icd9_to_category)
+
+        cat_cols = ['race', 'discharge_group', 'admission_type', 'admission_source', 'diag_category']
+        encoded_values = self.encoder.fit_transform(df[cat_cols])
+        new_cols = self.encoder.get_feature_names_out(cat_cols)
 
         df_encoded = pd.DataFrame(encoded_values, columns=new_cols, index=df.index)
         data_final = pd.concat([df.drop(columns=['race', 'discharge_disposition_id', 'discharge_group',
-                                                 'admission_type', 'admission_source', 'admission_type_id', 'admission_source_id']), df_encoded],
+                                                 'admission_type', 'admission_source', 'admission_type_id',
+                                                 'admission_source_id', 'diag_1', 'diag_category']), df_encoded],
                                axis=1)
         return data_final
 
     def get_split(self, ds):
         X = ds.drop(columns=["readmitted"])
-        y = ds["readmitted"].map({"<30": 1, ">30": 1, "NO": 0})
+        y = ds["readmitted"].map({"<30": 1, ">30": 0, "NO": 0})
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
     def train(self):
@@ -107,7 +134,7 @@ class PredictionModel:
         self.get_split(refined_data)
 
         base_models = [
-            ('lr', LogisticRegression(C=1.0, max_iter=1000, solver='lbfgs')),
+            ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
             ('lgbm', LGBMClassifier(
                 n_estimators=300, num_leaves=31, learning_rate=0.05,
                 subsample=0.8, colsample_bytree=0.8, is_unbalance=True
@@ -120,13 +147,19 @@ class PredictionModel:
         self.model = StackingClassifier(
             estimators=base_models,
             final_estimator=LogisticRegression(),
-            cv=5,  # 5-fold for out-of-fold predictions
-            stack_method='predict_proba',  # use probabilities, not hard labels
-            passthrough=False  # only base model outputs go to meta-learner
+            cv=5,
+            stack_method='predict_proba',
+            passthrough=False
         )
 
-        # Using non scaled data as LR is the only model that benefits from it.
         self.model.fit(self.X_train, self.y_train)
+
+        # Compute optimal F1 threshold on training predictions
+        y_proba = self.model.predict_proba(self.X_test)[:, 1]
+        precision, recall, thresholds = precision_recall_curve(self.y_test, y_proba)
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+        self.best_threshold = float(thresholds[f1_scores.argmax()])
+        print(f"Optimal F1 threshold: {self.best_threshold:.3f}")
 
 
     def save_model(self):
@@ -137,6 +170,7 @@ class PredictionModel:
         joblib.dump(self.X_test, MODELS_DIR / "X_test.pkl")
         joblib.dump(self.y_train, MODELS_DIR / "y_train.pkl")
         joblib.dump(self.y_test, MODELS_DIR / "y_test.pkl")
+        joblib.dump(self.best_threshold, MODELS_DIR / "best_threshold.pkl")
 
     @classmethod
     def load_or_train(cls):
@@ -150,6 +184,10 @@ class PredictionModel:
             instance.X_test = joblib.load(MODELS_DIR / "X_test.pkl")
             instance.y_train = joblib.load(MODELS_DIR / "y_train.pkl")
             instance.y_test = joblib.load(MODELS_DIR / "y_test.pkl")
+            try:
+                instance.best_threshold = joblib.load(MODELS_DIR / "best_threshold.pkl")
+            except FileNotFoundError:
+                instance.best_threshold = 0.5
             return instance
         except FileNotFoundError:
             print("No model found, training...")
@@ -221,7 +259,7 @@ class PredictionModel:
         """Convert PatientInput into the encoded DataFrame the model expects."""
         raw_df = patient_input.to_raw_df()
 
-        categorical_cols = ['race', 'discharge_group', 'admission_type', 'admission_source']
+        categorical_cols = ['race', 'discharge_group', 'admission_type', 'admission_source', 'diag_category']
         encoded_values = self.encoder.transform(raw_df[categorical_cols])
         encoded_cols = self.encoder.get_feature_names_out(categorical_cols)
         df_encoded = pd.DataFrame(encoded_values, columns=encoded_cols, index=raw_df.index)
@@ -234,9 +272,11 @@ class PredictionModel:
 
         proba = float(self.model.predict_proba(model_input)[:, 1][0])
 
-        if proba >= 0.6:
+        # Use threshold-relative categorization
+        t = self.best_threshold
+        if proba >= t * 1.5:
             risk_category = "high"
-        elif proba >= 0.4:
+        elif proba >= t * 0.75:
             risk_category = "moderate"
         else:
             risk_category = "low"
