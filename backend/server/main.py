@@ -14,6 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+print("Starting")
+
 prediction_model = PredictionModel.load_or_train()
 
 

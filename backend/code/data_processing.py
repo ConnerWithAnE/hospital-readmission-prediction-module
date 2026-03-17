@@ -51,8 +51,6 @@ class PredictionModel:
 
         df = add_comorbidities_to_dataframe(df)
 
-        # Remove deceased cases
-        df = df[df["discharge_status"] != "Deceased"]
 
         df = df[keep].copy()
 
@@ -65,6 +63,7 @@ class PredictionModel:
 
         # Drop birth as they are different compared to an emergency or other issue (frequent visits)
         df = df[df["admission_type"] != "birth"]
+        #df = df[df['discharge_group'] != "hospice_death"]
 
 
         df['age'] = df['age'].map(age_map)
@@ -85,8 +84,17 @@ class PredictionModel:
             df["number_diagnoses"] / stay
         )
 
-        # df["inpatient_x_emergency"] = df["number_inpatient"] * df["number_emergency"]
-        # df["total_visits"] = df["number_inpatient"] + df["number_outpatient"] + df["number_emergency"]
+        # Age-adjusted CCI (original Charlson adds 1 point per decade over 40)
+        df["age_adjusted_cci"] = df["cci_score"] + np.maximum(0, df["age"] - 4)
+
+        # Age x utilization interactions (frailty proxies)
+        df["age_x_inpatient"] = df["age"] * df["number_inpatient"]
+        df["age_x_medications"] = df["age"] * df["num_medications"]
+        df["age_x_cci"] = df["age"] * df["cci_score"]
+
+        # Non-linear age thresholds
+        df["age_over_70"] = (df["age"] >= 7).astype(int)
+        df["age_over_80"] = (df["age"] >= 8).astype(int)
 
 
         encoded_values = self.encoder.fit_transform(df[['race', 'discharge_group', 'admission_type', 'admission_source']])
@@ -143,6 +151,7 @@ class PredictionModel:
     def load_or_train(cls):
         """Load a saved model if available, otherwise train a new one."""
         try:
+            print("Trying to load model...")
             instance = object.__new__(cls)
             instance.model = joblib.load(MODELS_DIR / "stacking_readmit_model.pkl")
             instance.encoder = joblib.load(MODELS_DIR / "encoder.pkl")
@@ -152,6 +161,7 @@ class PredictionModel:
             instance.y_test = joblib.load(MODELS_DIR / "y_test.pkl")
             return instance
         except FileNotFoundError:
+            print("No model found, training...")
             instance = cls()
             instance.train()
             instance.save_model()
@@ -316,25 +326,7 @@ class PredictionModel:
         print(f"Train: {len(instance.X_train)}, Test: {len(instance.X_test)}")
 
         print("Training stacking classifier...")
-        base_models = [
-            ('lr', LogisticRegression(C=1.0, max_iter=2000, solver='lbfgs')),
-            ('lgbm', LGBMClassifier(
-                n_estimators=300, num_leaves=31, learning_rate=0.05,
-                subsample=0.8, colsample_bytree=0.8, is_unbalance=True
-            )),
-            ('rf', RandomForestClassifier(
-                n_estimators=200, max_depth=12, class_weight='balanced'
-            ))
-        ]
-
-        instance.model = StackingClassifier(
-            estimators=base_models,
-            final_estimator=LogisticRegression(),
-            cv=5,
-            stack_method='predict_proba',
-            passthrough=False
-        )
-        instance.model.fit(instance.X_train, instance.y_train)
+        instance.train()
         print("Training complete.")
 
         # --- Evaluate on test set ---
