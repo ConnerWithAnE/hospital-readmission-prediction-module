@@ -35,6 +35,18 @@ export default function ManualEntry({ fields, values, onChange }: ManualEntryPro
                         />
                     </Field>
                 )
+            case "boolean":
+                return (
+                    <Field key={item["name"]}>
+                        <label className="flex items-center gap-2">
+                            <Checkbox
+                                checked={!!values[item["name"]]}
+                                onCheckedChange={checked => onChange(item["name"], !!checked)}
+                            />
+                            <FieldLabel className="mb-0">{item["label"]}</FieldLabel>
+                        </label>
+                    </Field>
+                )
             case "select":
                 return (
                     <Field key={item["name"]}>
