@@ -42,6 +42,11 @@ export function AppSidebar() {
                                 <Link to="/model_stats" className="text-xs"><span>ML Model Assesment</span></Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="Scenarios">
+                                <Link to="/scenarios" className="text-xs"><span>Scenario Comparison</span></Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
 
                         </SidebarMenu>
                 </SidebarGroup>
