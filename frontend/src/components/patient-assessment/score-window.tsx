@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import type { PredictionResult } from "@/pages/patient-assesment"
 import { Field, FieldLabel } from "@/components/ui/field"
 
@@ -13,6 +14,13 @@ const RISK_COLORS: Record<string, string> = {
     moderate: "text-yellow-500",
     high: "text-red-500",
     very_high: "text-red-700",
+}
+const RISK_BADGE: Record<string, string> = {
+    very_low: "text-green-700 bg-green-50 border-green-300",
+    low: "text-green-600 bg-green-50 border-green-200",
+    moderate: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    high: "text-orange-600 bg-orange-50 border-orange-200",
+    very_high: "text-red-700 bg-red-50 border-red-300",
 }
 const RISK_HEX: Record<string, string> = { very_low: "#16a34a", low: "#22c55e", moderate: "#eab308", high: "#ef4444", very_high: "#b91c1c" }
 const POSITIVE_COLOR = "#ef4444"
@@ -133,11 +141,21 @@ export default function ScoreWindow({ result }: ScoreWindowProps) {
     return (
         <div className="flex flex-1 flex-col gap-4 p-6 border-2 rounded-lg">
             <div className="flex flex-col items-center gap-1">
-                <span className="text-6xl font-bold">{percentage}%</span>
-                <span className={`text-lg font-medium capitalize ${RISK_COLORS[result.risk_category]}`}>
-                    {result.risk_category.replace("_", " ")} Risk
-                </span>
-                <span className="text-sm text-muted-foreground">30-day readmission probability</span>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span
+                                className={`text-4xl font-bold capitalize cursor-default px-4 py-1 rounded-lg border-2 ${RISK_BADGE[result.risk_category] ?? ""}`}
+                            >
+                                {result.risk_category.replace("_", " ")} Risk
+                            </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-sm">
+                            <p className="font-semibold">{percentage}% probability</p>
+                            <p className="text-muted-foreground text-xs">30-day readmission</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
             <div className="w-full">
                 <div className="flex-1 gap-4 text-xs text-muted-foreground mb-2">

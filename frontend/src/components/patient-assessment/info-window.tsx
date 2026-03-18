@@ -18,6 +18,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
     const [fields, setFields] = useState<any[]>([])
     const [values, setValues] = useState<Record<string, any>>({})
     const [errors, setErrors] = useState<string[]>([])
+    const [loading, setLoading] = useState(false)
 
     useEffect(() => {
         fetch("/api/fields")
@@ -41,6 +42,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
         }
 
         setErrors([])
+        setLoading(true)
         fetch("/api/predict", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -49,33 +51,39 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
             .then(res => res.json())
             .then(data => onResult(data))
             .catch(err => console.error("Prediction failed:", err))
+            .finally(() => setLoading(false))
     }
 
     return (
-        <div className="w-full max-w-[45%] border-2 rounded-lg p-3">
-            <Tabs defaultValue="manual">
-                <div className="grid grid-cols-2 gap-6">
-                    <TabsList className="w-full">
-                        <TabsTrigger value="manual" className="col-span-1">Manual Entry</TabsTrigger>
+        <div className="w-full max-w-[45%] border-2 rounded-lg flex flex-col">
+            <Tabs defaultValue="manual" className="flex flex-col flex-1">
+                <div className="flex items-center gap-3 p-3 border-b">
+                    <TabsList>
+                        <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                <span>
-                                    <TabsTrigger value="upload" disabled>Upload</TabsTrigger>
-                                </span>
+                                    <span>
+                                        <TabsTrigger value="upload" disabled>Upload</TabsTrigger>
+                                    </span>
                                 </TooltipTrigger>
                                 <TooltipContent>Coming soon</TooltipContent>
                             </Tooltip>
-                            </TooltipProvider>
+                        </TooltipProvider>
                     </TabsList>
-                    <Button variant="outline" onClick={handleRunAssessment}>Run Assessment</Button>
+                    <div className="flex-1" />
+                    <Button onClick={handleRunAssessment} disabled={loading}>
+                        {loading ? "Running..." : "Run Assessment"}
+                    </Button>
                 </div>
                 {errors.length > 0 && (
-                    <p className="text-sm text-destructive mt-2">
-                        Missing fields: {errors.join(", ")}
-                    </p>
+                    <div className="px-3 py-2 bg-destructive/10 border-b">
+                        <p className="text-sm text-destructive">
+                            Missing fields: {errors.join(", ")}
+                        </p>
+                    </div>
                 )}
-                <TabsContent value="manual"> 
+                <TabsContent value="manual" className="flex-1 p-3 mt-0">
                     <ManualEntry fields={fields} values={values} onChange={handleChange} />
                 </TabsContent>
             </Tabs>
