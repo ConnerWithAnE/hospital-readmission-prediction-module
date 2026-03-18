@@ -151,6 +151,10 @@ class PredictionModel:
             )),
             ('rf', RandomForestClassifier(
                 n_estimators=200, max_depth=12,
+            )),
+            ('xgb', XGBClassifier(
+                n_estimators=500, max_depth=6, learning_rate=0.03,
+                subsample=0.8, colsample_bytree=0.8, random_state=42,
             ))
         ]
 

@@ -5,8 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/manual-entry.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/manual-entry.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/datasets/deprecated/CleanedDataSet_jh.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/datasets/deprecated/Healthcare_Data_Analysis_for_readmission.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/datasets/deprecated/archive.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/datasets/deprecated/mimic-iv-clinical-database-demo-2.2.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/best_threshold.pkl" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
