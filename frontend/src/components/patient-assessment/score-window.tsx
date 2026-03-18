@@ -135,7 +135,7 @@ export default function ScoreWindow({ result }: ScoreWindowProps) {
             <div className="flex flex-col items-center gap-1">
                 <span className="text-6xl font-bold">{percentage}%</span>
                 <span className={`text-lg font-medium capitalize ${RISK_COLORS[result.risk_category]}`}>
-                    {result.risk_category} Risk
+                    {result.risk_category.replace("_", " ")} Risk
                 </span>
                 <span className="text-sm text-muted-foreground">30-day readmission probability</span>
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 
 interface PredictionResult {
     risk_score: number
-    risk_category: "low" | "moderate" | "high"
+    risk_category: "very_low" | "low" | "moderate" | "high" | "very_high"
     contributing_factors: { feature: string; value: number; impact: number }[]
 }
 
@@ -217,9 +217,11 @@ const SCENARIOS: Scenario[] = [
 ]
 
 const RISK_COLORS: Record<string, string> = {
+    very_low: "text-green-700 bg-green-50 border-green-300",
     low: "text-green-600 bg-green-50 border-green-200",
     moderate: "text-yellow-600 bg-yellow-50 border-yellow-200",
-    high: "text-red-600 bg-red-50 border-red-200",
+    high: "text-orange-600 bg-orange-50 border-orange-200",
+    very_high: "text-red-700 bg-red-50 border-red-300",
 }
 
 export function ScenarioComparisonPage() {
@@ -322,7 +324,7 @@ export function ScenarioComparisonPage() {
                                         <span
                                             className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${RISK_COLORS[scenario.result.risk_category] ?? ""}`}
                                         >
-                                            {scenario.result.risk_category}
+                                            {scenario.result.risk_category.replace("_", " ")}
                                         </span>
                                     )}
                                 </td>
@@ -393,7 +395,7 @@ function ScenarioCard({ scenario }: { scenario: Scenario }) {
                         className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${RISK_COLORS[result.risk_category] ?? ""}`}
                     >
                         {(result.risk_score * 100).toFixed(1)}%{" "}
-                        {result.risk_category}
+                        {result.risk_category.replace("_", " ")}
                     </span>
                 )}
                 {scenario.loading && (

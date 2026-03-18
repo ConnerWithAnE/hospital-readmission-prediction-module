@@ -308,15 +308,15 @@ class PredictionModel:
 
         proba = float(self.model.predict_proba(model_input)[:, 1][0])
 
-        # 5-tier risk categorization based on score distribution percentiles
-        t = self.risk_tiers
-        if proba >= t["p90"]:
+        # 5-tier risk categorization using threshold-relative boundaries
+        t = self.best_threshold
+        if proba >= t * 2.5:
             risk_category = "very_high"
-        elif proba >= t["p75"]:
+        elif proba >= t * 1.25:
             risk_category = "high"
-        elif proba >= t["p50"]:
+        elif proba >= t * 0.75:
             risk_category = "moderate"
-        elif proba >= t["p25"]:
+        elif proba >= t * 0.4:
             risk_category = "low"
         else:
             risk_category = "very_low"
@@ -423,5 +423,141 @@ class PredictionModel:
         return instance
 
 
+    @classmethod
+    def compare_approaches(cls):
+        """Compare model approaches: XGBoost vs improved stacking vs current baseline."""
+        instance = cls()
+        refined_data = instance.refine_dataset()
+        instance.get_split(refined_data)
+
+        X_train, X_test = instance.X_train, instance.X_test
+        y_train, y_test = instance.y_train, instance.y_test
+
+        neg, pos = int((y_train == 0).sum()), int((y_train == 1).sum())
+        spw = neg / pos
+        print(f"Class balance: {neg} neg, {pos} pos (ratio {spw:.1f}:1)\n")
+
+        results = {}
+
+        # ── Approach A: Single XGBoost ────────────────────────────────
+        print("=" * 60)
+        print("A: XGBoost + scale_pos_weight + sigmoid calibration")
+        print("=" * 60)
+
+        xgb_model = XGBClassifier(
+            n_estimators=800,
+            max_depth=6,
+            learning_rate=0.03,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            scale_pos_weight=spw,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            min_child_weight=5,
+            random_state=42,
+            eval_metric="aucpr",
+        )
+        xgb_model.fit(X_train, y_train)
+
+        # Uncalibrated
+        y_proba_a_raw = xgb_model.predict_proba(X_test)[:, 1]
+        auroc_a_raw = roc_auc_score(y_test, y_proba_a_raw)
+        auprc_a_raw = average_precision_score(y_test, y_proba_a_raw)
+        print(f"  (uncalibrated)  AUROC={auroc_a_raw:.3f}  AUPRC={auprc_a_raw:.3f}")
+
+        # Sigmoid calibration
+        cal_a = CalibratedClassifierCV(xgb_model, method="sigmoid", cv=3)
+        cal_a.fit(X_train, y_train)
+        y_proba_a = cal_a.predict_proba(X_test)[:, 1]
+        auroc_a = roc_auc_score(y_test, y_proba_a)
+        auprc_a = average_precision_score(y_test, y_proba_a)
+        prec_a, rec_a, thr_a = precision_recall_curve(y_test, y_proba_a)
+        f1_a = 2 * (prec_a * rec_a) / (prec_a + rec_a + 1e-8)
+        thresh_a = float(thr_a[f1_a.argmax()])
+        y_pred_a = (y_proba_a >= thresh_a).astype(int)
+        print(f"  (calibrated)    AUROC={auroc_a:.3f}  AUPRC={auprc_a:.3f}  Thresh={thresh_a:.3f}")
+        print(classification_report(y_test, y_pred_a, target_names=["No Readmit", "Readmit"]))
+        results["A"] = {"auroc": auroc_a, "auprc": auprc_a, "threshold": thresh_a}
+
+        # ── Approach B: Stacking with class weights ───────────────────
+        print("=" * 60)
+        print("B: Stacking + class weights (no SMOTE) + sigmoid calibration")
+        print("=" * 60)
+
+        stacker_b = StackingClassifier(
+            estimators=[
+                ("lr", LogisticRegression(C=1.0, max_iter=3000, solver="lbfgs", class_weight="balanced")),
+                ("lgbm", LGBMClassifier(
+                    n_estimators=300, num_leaves=31, learning_rate=0.05,
+                    subsample=0.8, colsample_bytree=0.8, scale_pos_weight=spw,
+                )),
+                ("rf", RandomForestClassifier(n_estimators=200, max_depth=12, class_weight="balanced")),
+            ],
+            final_estimator=LogisticRegression(),
+            cv=5, stack_method="predict_proba", passthrough=False,
+        )
+        stacker_b.fit(X_train, y_train)
+
+        cal_b = CalibratedClassifierCV(stacker_b, method="sigmoid", cv=3)
+        cal_b.fit(X_train, y_train)
+        y_proba_b = cal_b.predict_proba(X_test)[:, 1]
+        auroc_b = roc_auc_score(y_test, y_proba_b)
+        auprc_b = average_precision_score(y_test, y_proba_b)
+        prec_b, rec_b, thr_b = precision_recall_curve(y_test, y_proba_b)
+        f1_b = 2 * (prec_b * rec_b) / (prec_b + rec_b + 1e-8)
+        thresh_b = float(thr_b[f1_b.argmax()])
+        y_pred_b = (y_proba_b >= thresh_b).astype(int)
+        print(f"  AUROC={auroc_b:.3f}  AUPRC={auprc_b:.3f}  Thresh={thresh_b:.3f}")
+        print(classification_report(y_test, y_pred_b, target_names=["No Readmit", "Readmit"]))
+        results["B"] = {"auroc": auroc_b, "auprc": auprc_b, "threshold": thresh_b}
+
+        # ── Baseline: Current pipeline (SMOTE + stacking + isotonic) ──
+        print("=" * 60)
+        print("BASELINE: Current (SMOTE + stacking + isotonic calibration)")
+        print("=" * 60)
+
+        smote = SMOTE(random_state=42)
+        X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+
+        stacker_c = StackingClassifier(
+            estimators=[
+                ("lr", LogisticRegression(C=1.0, max_iter=3000, solver="lbfgs")),
+                ("lgbm", LGBMClassifier(
+                    n_estimators=300, num_leaves=31, learning_rate=0.05,
+                    subsample=0.8, colsample_bytree=0.8,
+                )),
+                ("rf", RandomForestClassifier(n_estimators=200, max_depth=12)),
+            ],
+            final_estimator=LogisticRegression(),
+            cv=5, stack_method="predict_proba", passthrough=False,
+        )
+        stacker_c.fit(X_resampled, y_resampled)
+
+        cal_c = CalibratedClassifierCV(stacker_c, method="isotonic", cv=3)
+        cal_c.fit(X_train, y_train)
+        y_proba_c = cal_c.predict_proba(X_test)[:, 1]
+        auroc_c = roc_auc_score(y_test, y_proba_c)
+        auprc_c = average_precision_score(y_test, y_proba_c)
+        prec_c, rec_c, thr_c = precision_recall_curve(y_test, y_proba_c)
+        f1_c = 2 * (prec_c * rec_c) / (prec_c + rec_c + 1e-8)
+        thresh_c = float(thr_c[f1_c.argmax()])
+        y_pred_c = (y_proba_c >= thresh_c).astype(int)
+        print(f"  AUROC={auroc_c:.3f}  AUPRC={auprc_c:.3f}  Thresh={thresh_c:.3f}")
+        print(classification_report(y_test, y_pred_c, target_names=["No Readmit", "Readmit"]))
+        results["baseline"] = {"auroc": auroc_c, "auprc": auprc_c, "threshold": thresh_c}
+
+        # ── Summary ───────────────────────────────────────────────────
+        print("\n" + "=" * 60)
+        print("COMPARISON SUMMARY")
+        print("=" * 60)
+        print(f"{'Approach':<48} {'AUROC':>7} {'AUPRC':>7} {'Thresh':>7}")
+        print("-" * 70)
+        print(f"{'A: XGBoost + sigmoid':<48} {results['A']['auroc']:>7.3f} {results['A']['auprc']:>7.3f} {results['A']['threshold']:>7.3f}")
+        print(f"{'B: Stacking + class weights + sigmoid':<48} {results['B']['auroc']:>7.3f} {results['B']['auprc']:>7.3f} {results['B']['threshold']:>7.3f}")
+        print(f"{'Baseline: SMOTE + stacking + isotonic':<48} {results['baseline']['auroc']:>7.3f} {results['baseline']['auprc']:>7.3f} {results['baseline']['threshold']:>7.3f}")
+
+        return results
+
+
 if __name__ == "__main__":
-    PredictionModel.train_and_test()
+    PredictionModel.compare_approaches()

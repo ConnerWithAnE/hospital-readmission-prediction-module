@@ -20,7 +20,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
     const [errors, setErrors] = useState<string[]>([])
 
     useEffect(() => {
-        fetch("http://127.0.0.1:8000/api/fields")
+        fetch("/api/fields")
             .then(res => res.json())
             .then(data => setFields(data))
             .catch(err => console.error("Failed to fetch fields:", err))
@@ -32,7 +32,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
 
     function handleRunAssessment() {
         const missing = fields
-            .filter(f => f.type !== "checkbox_group" && (values[f.name] === undefined || values[f.name] === ""))
+            .filter(f => f.type !== "checkbox_group" && f.type !== "boolean" && (values[f.name] === undefined || values[f.name] === ""))
             .map(f => f.label)
 
         if (missing.length > 0) {
@@ -41,7 +41,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
         }
 
         setErrors([])
-        fetch("http://127.0.0.1:8000/api/predict", {
+        fetch("/api/predict", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(values),
