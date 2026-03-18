@@ -143,6 +143,23 @@ class PredictionModel:
         X_resampled, y_resampled = smote.fit_resample(self.X_train, self.y_train)
         print(f"SMOTE: {len(self.X_train)} -> {len(X_resampled)} training samples")
 
+        # Feature pruning: train scout LGBM to identify low-importance features
+        lgbm_scout = LGBMClassifier(
+            n_estimators=300, num_leaves=31, learning_rate=0.05,
+            subsample=0.8, colsample_bytree=0.8,
+        )
+        lgbm_scout.fit(X_resampled, y_resampled)
+        importances = lgbm_scout.feature_importances_
+        feature_names = self.X_train.columns.tolist()
+        indexed = sorted(zip(feature_names, importances), key=lambda x: x[1])
+        n_drop = max(1, len(indexed) // 7)  # ~15%
+        self.drop_features = [name for name, imp in indexed[:n_drop]]
+        print(f"Pruning {n_drop} low-importance features: {self.drop_features}")
+
+        X_resampled = X_resampled.drop(columns=self.drop_features)
+        self.X_train = self.X_train.drop(columns=self.drop_features)
+        self.X_test = self.X_test.drop(columns=self.drop_features)
+
         base_models = [
             ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
             ('lgbm', LGBMClassifier(
@@ -152,10 +169,6 @@ class PredictionModel:
             ('rf', RandomForestClassifier(
                 n_estimators=200, max_depth=12,
             )),
-            ('xgb', XGBClassifier(
-                n_estimators=500, max_depth=6, learning_rate=0.03,
-                subsample=0.8, colsample_bytree=0.8, random_state=42,
-            ))
         ]
 
         self.model = StackingClassifier(
@@ -196,6 +209,7 @@ class PredictionModel:
         joblib.dump(self.y_test, MODELS_DIR / "y_test.pkl")
         joblib.dump(self.best_threshold, MODELS_DIR / "best_threshold.pkl")
         joblib.dump(self.lgbm_estimator, MODELS_DIR / "lgbm_estimator.pkl")
+        joblib.dump(self.drop_features, MODELS_DIR / "drop_features.pkl")
 
     @classmethod
     def load_or_train(cls):
@@ -217,6 +231,10 @@ class PredictionModel:
                 instance.lgbm_estimator = joblib.load(MODELS_DIR / "lgbm_estimator.pkl")
             except FileNotFoundError:
                 instance.lgbm_estimator = None
+            try:
+                instance.drop_features = joblib.load(MODELS_DIR / "drop_features.pkl")
+            except FileNotFoundError:
+                instance.drop_features = []
             return instance
         except FileNotFoundError:
             print("No model found, training...")
@@ -293,7 +311,10 @@ class PredictionModel:
         encoded_cols = self.encoder.get_feature_names_out(categorical_cols)
         df_encoded = pd.DataFrame(encoded_values, columns=encoded_cols, index=raw_df.index)
 
-        return pd.concat([raw_df.drop(columns=categorical_cols), df_encoded], axis=1)
+        result = pd.concat([raw_df.drop(columns=categorical_cols), df_encoded], axis=1)
+        if self.drop_features:
+            result = result.drop(columns=[c for c in self.drop_features if c in result.columns])
+        return result
 
     def predict(self, patient_input):
         """Accept a PatientInput, return risk score and contributing factors."""
@@ -551,6 +572,145 @@ class PredictionModel:
         print(f"{'Baseline: SMOTE + stacking + isotonic':<48} {results['baseline']['auroc']:>7.3f} {results['baseline']['auprc']:>7.3f} {results['baseline']['threshold']:>7.3f}")
 
         return results
+
+
+    @classmethod
+    def compare_xgb_vs_pruned(cls):
+        """Compare 4-model stacking vs 3-model + feature pruning."""
+        from imblearn.over_sampling import SMOTE
+
+        instance = cls()
+        refined_data = instance.refine_dataset()
+        instance.get_split(refined_data)
+        X_train, X_test = instance.X_train, instance.X_test
+        y_train, y_test = instance.y_train, instance.y_test
+
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_train, y_train)
+        print(f"SMOTE: {len(X_train)} -> {len(X_res)} samples\n")
+
+        def evaluate(model, X_te, y_te, label):
+            cal = CalibratedClassifierCV(model, method="isotonic", cv=3)
+            cal.fit(X_train, y_train)
+            y_p = cal.predict_proba(X_te)[:, 1]
+            auroc = roc_auc_score(y_te, y_p)
+            auprc = average_precision_score(y_te, y_p)
+            pr, rc, th = precision_recall_curve(y_te, y_p)
+            f1 = 2 * (pr * rc) / (pr + rc + 1e-8)
+            thresh = float(th[f1.argmax()])
+            y_pred = (y_p >= thresh).astype(int)
+            print(f"{label}")
+            print(f"  AUROC={auroc:.3f}  AUPRC={auprc:.3f}  Thresh={thresh:.3f}")
+            print(classification_report(y_te, y_pred, target_names=["No Readmit", "Readmit"]))
+            return {"auroc": auroc, "auprc": auprc, "threshold": thresh}
+
+        # ── A: 4-model stacking (current) ─────────────────────────────
+        print("=" * 60)
+        stacker_a = StackingClassifier(
+            estimators=[
+                ("lr", LogisticRegression(C=1.0, max_iter=3000, solver="lbfgs")),
+                ("lgbm", LGBMClassifier(n_estimators=300, num_leaves=31, learning_rate=0.05,
+                    subsample=0.8, colsample_bytree=0.8)),
+                ("rf", RandomForestClassifier(n_estimators=200, max_depth=12)),
+                ("xgb", XGBClassifier(n_estimators=500, max_depth=6, learning_rate=0.03,
+                    subsample=0.8, colsample_bytree=0.8, random_state=42)),
+            ],
+            final_estimator=LogisticRegression(), cv=5,
+            stack_method="predict_proba", passthrough=False,
+        )
+        stacker_a.fit(X_res, y_res)
+        res_a = evaluate(stacker_a, X_test, y_test, "A: 4-model (LR+LGBM+RF+XGB)")
+
+        # ── B: 3-model + feature pruning ──────────────────────────────
+        # First train a LGBM to get feature importances
+        print("=" * 60)
+        print("Identifying low-importance features...")
+        lgbm_scout = LGBMClassifier(
+            n_estimators=300, num_leaves=31, learning_rate=0.05,
+            subsample=0.8, colsample_bytree=0.8,
+        )
+        lgbm_scout.fit(X_res, y_res)
+        importances = lgbm_scout.feature_importances_
+        feature_names = X_train.columns.tolist()
+
+        # Sort by importance, find bottom 15%
+        indexed = sorted(zip(feature_names, importances), key=lambda x: x[1])
+        n_drop = max(1, len(indexed) // 7)  # ~15%
+        drop_features = [name for name, imp in indexed[:n_drop]]
+        print(f"Dropping {n_drop} features: {drop_features}")
+
+        # Prune and retrain
+        X_res_pruned = X_res.drop(columns=drop_features)
+        X_train_pruned = X_train.drop(columns=drop_features)
+        X_test_pruned = X_test.drop(columns=drop_features)
+
+        stacker_b = StackingClassifier(
+            estimators=[
+                ("lr", LogisticRegression(C=1.0, max_iter=3000, solver="lbfgs")),
+                ("lgbm", LGBMClassifier(n_estimators=300, num_leaves=31, learning_rate=0.05,
+                    subsample=0.8, colsample_bytree=0.8)),
+                ("rf", RandomForestClassifier(n_estimators=200, max_depth=12)),
+            ],
+            final_estimator=LogisticRegression(), cv=5,
+            stack_method="predict_proba", passthrough=False,
+        )
+        stacker_b.fit(X_res_pruned, y_res)
+
+        # Need to recalibrate with pruned train data
+        cal_b = CalibratedClassifierCV(stacker_b, method="isotonic", cv=3)
+        cal_b.fit(X_train_pruned, y_train)
+        y_p_b = cal_b.predict_proba(X_test_pruned)[:, 1]
+        auroc_b = roc_auc_score(y_test, y_p_b)
+        auprc_b = average_precision_score(y_test, y_p_b)
+        pr_b, rc_b, th_b = precision_recall_curve(y_test, y_p_b)
+        f1_b = 2 * (pr_b * rc_b) / (pr_b + rc_b + 1e-8)
+        thresh_b = float(th_b[f1_b.argmax()])
+        y_pred_b = (y_p_b >= thresh_b).astype(int)
+        print(f"\nB: 3-model pruned ({len(X_test_pruned.columns)} features)")
+        print(f"  AUROC={auroc_b:.3f}  AUPRC={auprc_b:.3f}  Thresh={thresh_b:.3f}")
+        print(classification_report(y_test, y_pred_b, target_names=["No Readmit", "Readmit"]))
+        res_b = {"auroc": auroc_b, "auprc": auprc_b, "threshold": thresh_b}
+
+        # ── C: 4-model + feature pruning ──────────────────────────────
+        print("=" * 60)
+        stacker_c = StackingClassifier(
+            estimators=[
+                ("lr", LogisticRegression(C=1.0, max_iter=3000, solver="lbfgs")),
+                ("lgbm", LGBMClassifier(n_estimators=300, num_leaves=31, learning_rate=0.05,
+                    subsample=0.8, colsample_bytree=0.8)),
+                ("rf", RandomForestClassifier(n_estimators=200, max_depth=12)),
+                ("xgb", XGBClassifier(n_estimators=500, max_depth=6, learning_rate=0.03,
+                    subsample=0.8, colsample_bytree=0.8, random_state=42)),
+            ],
+            final_estimator=LogisticRegression(), cv=5,
+            stack_method="predict_proba", passthrough=False,
+        )
+        stacker_c.fit(X_res_pruned, y_res)
+
+        cal_c = CalibratedClassifierCV(stacker_c, method="isotonic", cv=3)
+        cal_c.fit(X_train_pruned, y_train)
+        y_p_c = cal_c.predict_proba(X_test_pruned)[:, 1]
+        auroc_c = roc_auc_score(y_test, y_p_c)
+        auprc_c = average_precision_score(y_test, y_p_c)
+        pr_c, rc_c, th_c = precision_recall_curve(y_test, y_p_c)
+        f1_c = 2 * (pr_c * rc_c) / (pr_c + rc_c + 1e-8)
+        thresh_c = float(th_c[f1_c.argmax()])
+        y_pred_c = (y_p_c >= thresh_c).astype(int)
+        print(f"C: 4-model pruned ({len(X_test_pruned.columns)} features)")
+        print(f"  AUROC={auroc_c:.3f}  AUPRC={auprc_c:.3f}  Thresh={thresh_c:.3f}")
+        print(classification_report(y_test, y_pred_c, target_names=["No Readmit", "Readmit"]))
+        res_c = {"auroc": auroc_c, "auprc": auprc_c, "threshold": thresh_c}
+
+        # ── Summary ───────────────────────────────────────────────────
+        print("\n" + "=" * 60)
+        print("COMPARISON SUMMARY")
+        print("=" * 60)
+        print(f"{'Approach':<48} {'AUROC':>7} {'AUPRC':>7} {'Thresh':>7}")
+        print("-" * 70)
+        print(f"{'A: 4-model (LR+LGBM+RF+XGB)':<48} {res_a['auroc']:>7.3f} {res_a['auprc']:>7.3f} {res_a['threshold']:>7.3f}")
+        print(f"{'B: 3-model pruned':<48} {res_b['auroc']:>7.3f} {res_b['auprc']:>7.3f} {res_b['threshold']:>7.3f}")
+        print(f"{'C: 4-model pruned':<48} {res_c['auroc']:>7.3f} {res_c['auprc']:>7.3f} {res_c['threshold']:>7.3f}")
+        print(f"\nDropped features: {drop_features}")
 
 
 if __name__ == "__main__":
