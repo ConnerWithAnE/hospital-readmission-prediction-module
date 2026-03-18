@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/model-assessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/model-assessment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/best_threshold.pkl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/lgbm_estimator.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/lgbm_estimator.pkl" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

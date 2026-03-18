@@ -32,7 +32,6 @@ from sklearn.metrics import roc_auc_score, average_precision_score, precision_re
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE
 from ucimlrepo import fetch_ucirepo
 
 from .cci import add_comorbidities_to_dataframe
@@ -134,19 +133,24 @@ class PredictionModel:
         refined_data = self.refine_dataset()
         self.get_split(refined_data)
 
-        # SMOTE: oversample minority class (<30 day readmissions) on training data only
+        neg, pos = int((self.y_train == 0).sum()), int((self.y_train == 1).sum())
+        spw = neg / pos
+        print(f"Class balance: {neg} neg, {pos} pos (ratio {spw:.1f}:1)")
+
+        # SMOTE to balance training set — gives wider probability spread
+        from imblearn.over_sampling import SMOTE
         smote = SMOTE(random_state=42)
-        X_train_resampled, y_train_resampled = smote.fit_resample(self.X_train, self.y_train)
-        print(f"SMOTE: {len(self.X_train)} -> {len(X_train_resampled)} training samples")
+        X_resampled, y_resampled = smote.fit_resample(self.X_train, self.y_train)
+        print(f"SMOTE: {len(self.X_train)} -> {len(X_resampled)} training samples")
 
         base_models = [
             ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
             ('lgbm', LGBMClassifier(
                 n_estimators=300, num_leaves=31, learning_rate=0.05,
-                subsample=0.8, colsample_bytree=0.8
+                subsample=0.8, colsample_bytree=0.8,
             )),
             ('rf', RandomForestClassifier(
-                n_estimators=200, max_depth=12
+                n_estimators=200, max_depth=12,
             ))
         ]
 
@@ -158,34 +162,24 @@ class PredictionModel:
             passthrough=False
         )
 
-        self.model.fit(X_train_resampled, y_train_resampled)
+        self.model.fit(X_resampled, y_resampled)
 
-        # Save reference to the fitted LGBM for feature contributions before calibration wraps it
+        # Save reference to the fitted LGBM for feature contributions
         self.lgbm_estimator = self.model.named_estimators_["lgbm"]
 
-        # Calibrate probabilities using isotonic regression
-        # Wrap the fitted stacker and recalibrate on the original (non-SMOTE) data
+        # Isotonic calibration — widens probability spread for high-risk patients
         calibrated = CalibratedClassifierCV(
             self.model, method="isotonic", cv=3
         )
         calibrated.fit(self.X_train, self.y_train)
         self.model = calibrated
 
-        # Compute optimal F1 threshold on calibrated predictions
+        # Compute optimal F1 threshold
         y_proba = self.model.predict_proba(self.X_test)[:, 1]
         precision, recall, thresholds = precision_recall_curve(self.y_test, y_proba)
         f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
         self.best_threshold = float(thresholds[f1_scores.argmax()])
-
-        # Compute percentile-based risk tier boundaries from test set predictions
-        self.risk_tiers = {
-            "p25": float(np.percentile(y_proba, 25)),
-            "p50": float(np.percentile(y_proba, 50)),
-            "p75": float(np.percentile(y_proba, 75)),
-            "p90": float(np.percentile(y_proba, 90)),
-        }
         print(f"Optimal F1 threshold: {self.best_threshold:.3f}")
-        print(f"Risk tier boundaries: {self.risk_tiers}")
 
 
     def save_model(self):
@@ -197,7 +191,6 @@ class PredictionModel:
         joblib.dump(self.y_train, MODELS_DIR / "y_train.pkl")
         joblib.dump(self.y_test, MODELS_DIR / "y_test.pkl")
         joblib.dump(self.best_threshold, MODELS_DIR / "best_threshold.pkl")
-        joblib.dump(self.risk_tiers, MODELS_DIR / "risk_tiers.pkl")
         joblib.dump(self.lgbm_estimator, MODELS_DIR / "lgbm_estimator.pkl")
 
     @classmethod
@@ -216,10 +209,6 @@ class PredictionModel:
                 instance.best_threshold = joblib.load(MODELS_DIR / "best_threshold.pkl")
             except FileNotFoundError:
                 instance.best_threshold = 0.5
-            try:
-                instance.risk_tiers = joblib.load(MODELS_DIR / "risk_tiers.pkl")
-            except FileNotFoundError:
-                instance.risk_tiers = {"p25": 0.03, "p50": 0.06, "p75": 0.12, "p90": 0.25}
             try:
                 instance.lgbm_estimator = joblib.load(MODELS_DIR / "lgbm_estimator.pkl")
             except FileNotFoundError:
@@ -516,6 +505,7 @@ class PredictionModel:
         print("BASELINE: Current (SMOTE + stacking + isotonic calibration)")
         print("=" * 60)
 
+        from imblearn.over_sampling import SMOTE
         smote = SMOTE(random_state=42)
         X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
 
@@ -560,4 +550,4 @@ class PredictionModel:
 
 
 if __name__ == "__main__":
-    PredictionModel.compare_approaches()
+    PredictionModel.train_and_test()
