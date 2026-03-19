@@ -12,11 +12,21 @@ import type { PredictionResult } from "@/pages/patient-assesment"
 
 interface InfoWindowProps {
     onResult: (result: PredictionResult, values: Record<string, any>) => void
+    onClear?: () => void
 }
 
-export default function InfoWindow({ onResult }: InfoWindowProps) {
+const STORAGE_KEY = "patient-assessment-values"
+
+function loadSavedValues(): Record<string, any> {
+    try {
+        const saved = sessionStorage.getItem(STORAGE_KEY)
+        return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+}
+
+export default function InfoWindow({ onResult, onClear }: InfoWindowProps) {
     const [fields, setFields] = useState<any[]>([])
-    const [values, setValues] = useState<Record<string, any>>({})
+    const [values, setValues] = useState<Record<string, any>>(loadSavedValues)
     const [errors, setErrors] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
 
@@ -28,7 +38,18 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
     }, [])
 
     function handleChange(name: string, value: any) {
-        setValues(prev => ({ ...prev, [name]: value }))
+        setValues(prev => {
+            const next = { ...prev, [name]: value }
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+            return next
+        })
+    }
+
+    function handleClear() {
+        setValues({})
+        setErrors([])
+        sessionStorage.removeItem(STORAGE_KEY)
+        onClear?.()
     }
 
     function handleRunAssessment() {
@@ -72,6 +93,9 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
                         </TooltipProvider>
                     </TabsList>
                     <div className="flex-1" />
+                    <Button variant="outline" size="sm" onClick={handleClear}>
+                        Clear
+                    </Button>
                     <Button onClick={handleRunAssessment} disabled={loading}>
                         {loading ? "Running..." : "Run Assessment"}
                     </Button>

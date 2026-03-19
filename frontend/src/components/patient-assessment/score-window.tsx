@@ -1,10 +1,17 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import type { PredictionResult } from "@/pages/patient-assesment"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
 import { generatePdfReport } from "@/lib/generate-pdf"
+
+interface SupplyGap {
+    drug: { generic_name: string; model_field: string | null }
+    quantity_on_hand: number
+    reorder_level: number
+    model_field: string
+}
 
 interface ScoreWindowProps {
     result: PredictionResult | null
@@ -123,8 +130,46 @@ function TopThreeCards({ slices, total }: { slices: PieSlice[]; total: number })
 }
 
 
+// Medication field names used by the model
+const MED_FIELDS = new Set([
+    "insulin", "metformin", "repaglinide", "nateglinide", "chlorpropamide",
+    "glimepiride", "acetohexamide", "glipizide", "glyburide", "tolbutamide",
+    "pioglitazone", "rosiglitazone", "acarbose", "miglitol", "troglitazone",
+    "tolazamide", "examide", "citoglipton", "glyburide_metformin",
+    "glipizide_metformin", "glimepiride_pioglitazone", "metformin_rosiglitazone",
+    "metformin_pioglitazone",
+])
+
 // ── Score Window ─────────────────────────────────────────────────────────────
 export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) {
+    const [supplyWarnings, setSupplyWarnings] = useState<SupplyGap[]>([])
+
+    useEffect(() => {
+        if (!result || !patientInput) { setSupplyWarnings([]); return }
+
+        // Find which medications the patient is actively using
+        const activeMeds = new Set<string>()
+        for (const [key, val] of Object.entries(patientInput)) {
+            if (MED_FIELDS.has(key) && val && val !== "No") {
+                // Convert underscore to hyphen to match model_field in inventory
+                activeMeds.add(key.replace(/_/g, "-"))
+                activeMeds.add(key) // also keep underscore variant
+            }
+        }
+
+        if (activeMeds.size === 0) { setSupplyWarnings([]); return }
+
+        fetch("/api/inventory/supply-gaps")
+            .then(r => r.json())
+            .then((gaps: SupplyGap[]) => {
+                const relevant = gaps.filter(g =>
+                    activeMeds.has(g.model_field) || activeMeds.has(g.model_field.replace(/-/g, "_"))
+                )
+                setSupplyWarnings(relevant)
+            })
+            .catch(() => setSupplyWarnings([]))
+    }, [result, patientInput])
+
     if (!result) {
         return (
             <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm p-6 border-2 rounded-lg">
@@ -152,6 +197,18 @@ export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) 
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-6 border-2 rounded-lg">
+            {supplyWarnings.length > 0 && (
+                <div className="rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <span className="font-semibold">Low Inventory Warning:</span>{" "}
+                    {supplyWarnings.map((g, i) => (
+                        <span key={g.model_field}>
+                            {i > 0 && ", "}
+                            {g.drug.generic_name}
+                            <span className="text-amber-600"> ({g.quantity_on_hand} left)</span>
+                        </span>
+                    ))}
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <div className="flex-1" />
                 <TooltipProvider>

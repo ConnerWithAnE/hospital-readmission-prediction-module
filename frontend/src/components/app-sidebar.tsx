@@ -24,7 +24,7 @@ export function AppSidebar() {
             <SidebarContent>
                 
                 <SidebarGroup>
-                    <SidebarGroupLabel>Doctor Resources</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-s">Doctor Resources</SidebarGroupLabel>
                         <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip="Home">
@@ -40,7 +40,7 @@ export function AppSidebar() {
                         </SidebarMenu>
                 </SidebarGroup>
                 <SidebarGroup>
-                    <SidebarGroupLabel>ML Resources</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-s">ML Resources</SidebarGroupLabel>
                         <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip="Home">
