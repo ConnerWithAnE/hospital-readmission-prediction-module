@@ -5,32 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/Planning/advanced_methods_plan.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/Planning/nn_integration_plan.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/X_test.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/X_train.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/best_threshold.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/drop_features.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/encoder.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/lgbm_estimator.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/risk_tiers.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/stacking_readmit_model.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/y_test.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/models/v3_best_so_far/y_train.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/catboost_info/catboost_training.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/catboost_info/learn_error.tsv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/catboost_info/time_left.tsv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/best_threshold.pkl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/server/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_improvement_plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/Planning/feature_improvement_plan.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/catboost_training.json" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/catboost_training.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/learn_error.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn_error.tsv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/time_left.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/time_left.tsv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/manual-entry.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/manual-entry.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model_improvement_plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/Planning/model_improvement_plan.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,12 +53,13 @@
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "elix",
-    "last_opened_file_path": "C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models/v3_best_so_far",
+    "last_opened_file_path": "C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v3_best_so_far" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v1" />
     </key>

@@ -14,11 +14,17 @@ export interface PredictionResult {
 
 export function PatientAssessmentPage() {
     const [result, setResult] = useState<PredictionResult | null>(null)
+    const [patientInput, setPatientInput] = useState<Record<string, unknown>>({})
+
+    function handleResult(data: PredictionResult, values: Record<string, unknown>) {
+        setResult(data)
+        setPatientInput(values)
+    }
 
     return (
         <div className="flex w-full h-full gap-4">
-            <InfoWindow onResult={setResult} />
-            <ScoreWindow result={result} />
+            <InfoWindow onResult={handleResult} />
+            <ScoreWindow result={result} patientInput={patientInput} />
         </div>
     )
 }

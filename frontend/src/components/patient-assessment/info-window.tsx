@@ -11,7 +11,7 @@ import ManualEntry from "./manual-entry"
 import type { PredictionResult } from "@/pages/patient-assesment"
 
 interface InfoWindowProps {
-    onResult: (result: PredictionResult) => void
+    onResult: (result: PredictionResult, values: Record<string, any>) => void
 }
 
 export default function InfoWindow({ onResult }: InfoWindowProps) {
@@ -49,7 +49,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
             body: JSON.stringify(values),
         })
             .then(res => res.json())
-            .then(data => onResult(data))
+            .then(data => onResult(data, values))
             .catch(err => console.error("Prediction failed:", err))
             .finally(() => setLoading(false))
     }

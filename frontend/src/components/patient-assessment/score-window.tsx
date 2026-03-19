@@ -3,9 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import type { PredictionResult } from "@/pages/patient-assesment"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Button } from "@/components/ui/button"
+import { generatePdfReport } from "@/lib/generate-pdf"
 
 interface ScoreWindowProps {
     result: PredictionResult | null
+    patientInput?: Record<string, unknown>
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -121,7 +124,7 @@ function TopThreeCards({ slices, total }: { slices: PieSlice[]; total: number })
 
 
 // ── Score Window ─────────────────────────────────────────────────────────────
-export default function ScoreWindow({ result }: ScoreWindowProps) {
+export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) {
     if (!result) {
         return (
             <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm p-6 border-2 rounded-lg">
@@ -138,9 +141,19 @@ export default function ScoreWindow({ result }: ScoreWindowProps) {
     }))
     const total = slices.reduce((s, d) => s + d.value, 0)
 
+    function handleExportPdf() {
+        generatePdfReport({
+            risk_score: result!.risk_score,
+            risk_category: result!.risk_category,
+            contributing_factors: result!.contributing_factors,
+            patientInput,
+        })
+    }
+
     return (
         <div className="flex flex-1 flex-col gap-4 p-6 border-2 rounded-lg">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center justify-between">
+                <div className="flex-1" />
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -156,6 +169,12 @@ export default function ScoreWindow({ result }: ScoreWindowProps) {
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
+                <div className="flex-1 flex justify-end">
+                    <Button variant="outline" size="sm" onClick={handleExportPdf}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export PDF
+                    </Button>
+                </div>
             </div>
             <div className="w-full">
                 <div className="flex-1 gap-4 text-xs text-muted-foreground mb-2">
