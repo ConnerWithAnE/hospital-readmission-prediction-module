@@ -326,19 +326,7 @@ class PredictionModel:
         model_input = self._prepare_input(patient_input)
 
         proba = float(self.model.predict_proba(model_input)[:, 1][0])
-
-        # 5-tier risk categorization using threshold-relative boundaries
-        t = self.best_threshold
-        if proba >= t * 2.5:
-            risk_category = "very_high"
-        elif proba >= t * 1.25:
-            risk_category = "high"
-        elif proba >= t * 0.75:
-            risk_category = "moderate"
-        elif proba >= t * 0.4:
-            risk_category = "low"
-        else:
-            risk_category = "very_low"
+        risk_category = self._risk_category(proba)
 
         # Get feature contributions from the saved LightGBM base model
         lgbm = self.lgbm_estimator
@@ -366,6 +354,96 @@ class PredictionModel:
             "contributing_factors": contributing_factors,
         }
 
+
+    def _risk_category(self, proba):
+        t = self.best_threshold
+        if proba >= t * 2.5:
+            return "very_high"
+        elif proba >= t * 1.25:
+            return "high"
+        elif proba >= t * 0.75:
+            return "moderate"
+        elif proba >= t * 0.4:
+            return "low"
+        else:
+            return "very_low"
+
+    def predict_med_impact(self, patient_input):
+        """Run what-if analysis: for each medication × each dose status, compute risk delta."""
+        from ..server.models import MedStatusEnum
+
+        # Medication fields on PatientInput (Pydantic field names)
+        med_fields = [
+            "insulin", "metformin", "repaglinide", "nateglinide", "chlorpropamide",
+            "glimepiride", "acetohexamide", "glipizide", "glyburide", "tolbutamide",
+            "pioglitazone", "rosiglitazone", "acarbose", "miglitol", "troglitazone",
+            "tolazamide", "examide", "citoglipton", "glyburide_metformin",
+            "glipizide_metformin", "glimepiride_pioglitazone", "metformin_rosiglitazone",
+            "metformin_pioglitazone",
+        ]
+        statuses = list(MedStatusEnum)
+        labels = {f: f.replace("_", "-").title() for f in med_fields}
+
+        # Baseline prediction
+        baseline_input = self._prepare_input(patient_input)
+        baseline_risk = float(self.model.predict_proba(baseline_input)[:, 1][0])
+
+        # Build all variant inputs
+        variant_rows = []
+        variant_meta = []  # (med_field, status_value)
+        for field in med_fields:
+            current = getattr(patient_input, field)
+            for status in statuses:
+                if status == current:
+                    continue
+                variant = patient_input.model_copy(update={field: status})
+                variant_rows.append(self._prepare_input(variant))
+                variant_meta.append((field, status.value))
+
+        # Batch predict
+        if variant_rows:
+            batch = pd.concat(variant_rows, ignore_index=True)
+            probas = self.model.predict_proba(batch)[:, 1]
+        else:
+            probas = []
+
+        # Organize results by medication
+        results_by_med = {f: [] for f in med_fields}
+        for i, (field, status_val) in enumerate(variant_meta):
+            risk = float(probas[i])
+            results_by_med[field].append({
+                "status": status_val,
+                "risk_score": round(risk, 4),
+                "delta": round(risk - baseline_risk, 4),
+            })
+
+        medications = []
+        for field in med_fields:
+            scenarios = results_by_med[field]
+            current_status = getattr(patient_input, field).value
+            deltas = [s["delta"] for s in scenarios]
+            max_reduction = min(deltas) if deltas else 0.0
+            max_increase = max(deltas) if deltas else 0.0
+            best = min(scenarios, key=lambda s: s["risk_score"]) if scenarios else None
+
+            medications.append({
+                "name": field,
+                "label": labels[field],
+                "current_status": current_status,
+                "scenarios": scenarios,
+                "max_reduction": round(max_reduction, 4),
+                "max_increase": round(max_increase, 4),
+                "best_status": best["status"] if best else current_status,
+            })
+
+        # Sort by most impactful (largest absolute reduction first)
+        medications.sort(key=lambda m: m["max_reduction"])
+
+        return {
+            "baseline_risk": round(baseline_risk, 4),
+            "baseline_category": self._risk_category(baseline_risk),
+            "medications": medications,
+        }
 
     def get_metrics(self):
         if self.model is None:

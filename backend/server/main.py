@@ -31,6 +31,10 @@ def get_fields():
 async def predict(patient_data: PatientInput):
     return prediction_model.predict(patient_data)
 
+@app.post("/api/predict/med-impact")
+async def predict_med_impact(patient_data: PatientInput):
+    return prediction_model.predict_med_impact(patient_data)
+
 @app.get("/api/model_stats")
 async def get_model_stats():
     return prediction_model.get_model_stats()

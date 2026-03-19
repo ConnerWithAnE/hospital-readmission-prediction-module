@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import type { PredictionResult } from "@/pages/patient-assesment"
+import type { PredictionResult, MedImpactResult } from "@/pages/patient-assesment"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
 import { generatePdfReport } from "@/lib/generate-pdf"
+import MedImpactView from "./med-impact-view"
 
 interface SupplyGap {
     drug: { generic_name: string; model_field: string | null }
@@ -16,6 +17,9 @@ interface SupplyGap {
 interface ScoreWindowProps {
     result: PredictionResult | null
     patientInput?: Record<string, unknown>
+    medImpact?: MedImpactResult | null
+    medImpactLoading?: boolean
+    onRequestMedImpact?: () => void
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -141,7 +145,7 @@ const MED_FIELDS = new Set([
 ])
 
 // ── Score Window ─────────────────────────────────────────────────────────────
-export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) {
+export default function ScoreWindow({ result, patientInput, medImpact, medImpactLoading, onRequestMedImpact }: ScoreWindowProps) {
     const [supplyWarnings, setSupplyWarnings] = useState<SupplyGap[]>([])
 
     useEffect(() => {
@@ -196,7 +200,7 @@ export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) 
     }
 
     return (
-        <div className="flex flex-1 flex-col gap-4 p-6 border-2 rounded-lg">
+        <div className="flex flex-1 flex-col gap-4 p-6 border-2 rounded-lg overflow-hidden">
             {supplyWarnings.length > 0 && (
                 <div className="rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     <span className="font-semibold">Low Inventory Warning:</span>{" "}
@@ -233,24 +237,41 @@ export default function ScoreWindow({ result, patientInput }: ScoreWindowProps) 
                     </Button>
                 </div>
             </div>
-            <div className="w-full">
-                <div className="flex-1 gap-4 text-xs text-muted-foreground mb-2">
-                    <span className="flex items-center gap-1">
-                        <span className="inline-block w-2 h-2 rounded-full bg-red-500" />Increases risk
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <span className="inline-block w-2 h-2 rounded-full bg-green-500" />Decreases risk
-                    </span>
-                </div>
-                <div className="flex p-4">
-                    <SvgPieChart slices={slices} />
-                    <BarChart slices={slices} />
-                </div>
-                <FieldLabel className="text-xl font-medium pb-3">Top Contributing Factors</FieldLabel>
-                <TopThreeCards slices={slices} total={total} />  
-            </div>
 
-            
+            <Tabs defaultValue="overview" className="flex flex-col flex-1 min-h-0">
+                <TabsList className="self-start">
+                    <TabsTrigger value="overview">Risk Overview</TabsTrigger>
+                    <TabsTrigger value="med-impact">Medication Impact</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="flex-1 overflow-y-auto mt-2">
+                    <div className="w-full">
+                        <div className="flex-1 gap-4 text-xs text-muted-foreground mb-2">
+                            <span className="flex items-center gap-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-red-500" />Increases risk
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />Decreases risk
+                            </span>
+                        </div>
+                        <div className="flex p-4">
+                            <SvgPieChart slices={slices} />
+                            <BarChart slices={slices} />
+                        </div>
+                        <FieldLabel className="text-xl font-medium pb-3">Top Contributing Factors</FieldLabel>
+                        <TopThreeCards slices={slices} total={total} />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="med-impact" className="flex-1 overflow-y-auto mt-2">
+                    <MedImpactView
+                        data={medImpact ?? null}
+                        loading={medImpactLoading ?? false}
+                        onRequest={onRequestMedImpact ?? (() => {})}
+                        hasAssessment={!!result}
+                    />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }
