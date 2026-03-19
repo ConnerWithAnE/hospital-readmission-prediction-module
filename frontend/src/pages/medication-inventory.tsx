@@ -70,6 +70,17 @@ export function MedicationInventoryPage() {
             .finally(() => setSeeding(false))
     }
 
+    function handleRandomize(seed: number) {
+        setSeedResult(null)
+        fetch(`/api/inventory/randomize?seed=${seed}`, { method: "POST" })
+            .then(r => r.json())
+            .then(data => {
+                setSeedResult(data.detail)
+                fetchData()
+            })
+            .catch(e => setSeedResult("Error: " + e.message))
+    }
+
     function handleDelete(drugId: number, name: string) {
         if (!confirm(`Remove ${name} from inventory?`)) return
         fetch(`/api/inventory/${drugId}`, { method: "DELETE" })
@@ -148,6 +159,13 @@ export function MedicationInventoryPage() {
                 <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}>
                     {seeding ? "Seeding..." : "Seed from NDC"}
                 </Button>
+                <div className="border-l pl-3 flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">Test:</span>
+                    <Button variant="outline" size="xs" onClick={() => handleRandomize(1)}>Preset 1</Button>
+                    <Button variant="outline" size="xs" onClick={() => handleRandomize(2)}>Preset 2</Button>
+                    <Button variant="outline" size="xs" onClick={() => handleRandomize(3)}>Preset 3</Button>
+                    <Button variant="outline" size="xs" onClick={() => handleRandomize(0)}>Random</Button>
+                </div>
             </div>
 
             {seedResult && (

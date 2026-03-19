@@ -316,10 +316,16 @@ def seed_from_ndc():
                 """, (ndc, generic, brand, dosage_form, strength, med_name))
                 drug_id = cur.lastrowid
 
+                max_stock = 100
                 conn.execute("""
                     INSERT INTO inventory (drug_id, quantity_on_hand, reorder_level, unit)
-                    VALUES (?, 0, 10, 'units')
-                """, (drug_id,))
+                    VALUES (?, ?, 10, 'units')
+                """, (drug_id, max_stock))
+
+                conn.execute("""
+                    INSERT INTO inventory_log (drug_id, change_amount, reason)
+                    VALUES (?, ?, 'initial stock')
+                """, (drug_id, max_stock))
 
                 added += 1
 
@@ -333,5 +339,34 @@ def seed_from_ndc():
         "added": added,
         "skipped": skipped,
         "errors": errors,
-        "message": f"Seeded {added} drugs ({skipped} already existed)"
+        "message": f"Seeded {added} drugs ({skipped} already existed, initial stock: 100)"
     }
+
+
+# ── Randomize stock levels (for testing) ─────────────────────────────────────
+
+@router.post("/inventory/randomize")
+def randomize_stock(seed: int = Query(0)):
+    import random
+    rng = random.Random(seed if seed != 0 else None)
+
+    conn = get_db()
+    rows = conn.execute("SELECT drug_id FROM inventory").fetchall()
+    if not rows:
+        conn.close()
+        return {"detail": "No inventory items to randomize", "count": 0}
+
+    for row in rows:
+        qty = rng.randint(0, 100)
+        conn.execute("""
+            UPDATE inventory SET quantity_on_hand = ?, last_updated = datetime('now')
+            WHERE drug_id = ?
+        """, (qty, row["drug_id"]))
+        conn.execute("""
+            INSERT INTO inventory_log (drug_id, change_amount, reason)
+            VALUES (?, ?, ?)
+        """, (row["drug_id"], qty, f"randomize (seed={seed})"))
+
+    conn.commit()
+    conn.close()
+    return {"detail": f"Randomized {len(rows)} items (seed={seed})", "count": len(rows)}
