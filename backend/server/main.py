@@ -4,8 +4,11 @@ from starlette.staticfiles import StaticFiles
 
 from ..code.data_processing import PredictionModel
 from .models import PatientInput
+from .inventory import router as inventory_router
+from .database import init_db
 
 app = FastAPI()
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,5 +35,7 @@ async def predict(patient_data: PatientInput):
 async def get_model_stats():
     return prediction_model.get_model_stats()
 
+
+app.include_router(inventory_router)
 
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")

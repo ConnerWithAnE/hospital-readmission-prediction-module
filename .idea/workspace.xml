@@ -6,12 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/best_threshold.pkl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/catboost_info/catboost_training.json" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/catboost_training.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/catboost_info/learn_error.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn_error.tsv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/catboost_info/time_left.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/time_left.tsv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +41,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "elix",
+    "git-widget-placeholder": "medication-tracking",
     "last_opened_file_path": "C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
@@ -172,6 +166,7 @@
       <workItem from="1773761715393" duration="164000" />
       <workItem from="1773761901586" duration="11982000" />
       <workItem from="1773776884798" duration="6669000" />
+      <workItem from="1773948138652" duration="3228000" />
     </task>
     <servers />
   </component>
