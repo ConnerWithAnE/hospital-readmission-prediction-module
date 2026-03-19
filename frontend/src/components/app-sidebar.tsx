@@ -31,6 +31,11 @@ export function AppSidebar() {
                                 <Link to="/" className="text-xs"><span>Patient Assesment</span></Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="Inventory">
+                                <Link to="/inventory" className="text-xs"><span>Medication Inventory</span></Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
 
                         </SidebarMenu>
                 </SidebarGroup>
