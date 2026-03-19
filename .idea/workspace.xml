@@ -7,16 +7,11 @@
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/data_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/best_threshold.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/best_threshold.pkl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/catboost_info/catboost_training.json" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/catboost_training.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/catboost_info/learn_error.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn_error.tsv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/catboost_info/time_left.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/time_left.tsv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/bun.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/info-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/patient-assessment/score-window.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/patient-assesment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/scenario-comparison.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

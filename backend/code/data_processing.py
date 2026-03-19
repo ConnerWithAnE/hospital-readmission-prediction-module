@@ -162,7 +162,7 @@ class PredictionModel:
         self.X_test = self.X_test.drop(columns=self.drop_features)
 
         base_models = [
-            ('lr', LogisticRegression(C=1.0, max_iter=5000, solver='lbfgs')),
+            ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
             ('lgbm', LGBMClassifier(
                 n_estimators=300, num_leaves=31, learning_rate=0.05,
                 subsample=0.8, colsample_bytree=0.8,
