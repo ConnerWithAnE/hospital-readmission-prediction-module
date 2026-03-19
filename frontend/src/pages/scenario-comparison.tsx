@@ -42,8 +42,6 @@ const SCENARIOS: Scenario[] = [
             insulin: "No",
             metformin: "No",
             diag_category: "musculoskeletal",
-            n_active_meds: 0,
-            n_med_changes: 0,
         },
     },
     {
@@ -76,9 +74,8 @@ const SCENARIOS: Scenario[] = [
             med_change: true,
             insulin: "Up",
             metformin: "Steady",
+            glipizide: "Down",
             diag_category: "circulatory",
-            n_active_meds: 3,
-            n_med_changes: 2,
         },
     },
     {
@@ -107,8 +104,6 @@ const SCENARIOS: Scenario[] = [
             insulin: "Steady",
             metformin: "Steady",
             diag_category: "endocrine",
-            n_active_meds: 2,
-            n_med_changes: 0,
         },
     },
     {
@@ -143,9 +138,9 @@ const SCENARIOS: Scenario[] = [
             med_change: true,
             insulin: "Up",
             metformin: "Down",
+            glipizide: "Steady",
+            pioglitazone: "Up",
             diag_category: "respiratory",
-            n_active_meds: 4,
-            n_med_changes: 3,
         },
     },
     {
@@ -174,8 +169,6 @@ const SCENARIOS: Scenario[] = [
             insulin: "No",
             metformin: "No",
             diag_category: "endocrine",
-            n_active_meds: 0,
-            n_med_changes: 0,
         },
     },
     {
@@ -209,9 +202,8 @@ const SCENARIOS: Scenario[] = [
             med_change: true,
             insulin: "Up",
             metformin: "No",
+            glimepiride: "Steady",
             diag_category: "circulatory",
-            n_active_meds: 2,
-            n_med_changes: 1,
         },
     },
 ]

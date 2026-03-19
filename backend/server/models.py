@@ -192,9 +192,28 @@ class PatientInput(BaseModel):
     med_change: bool = False
     insulin: MedStatusEnum = MedStatusEnum.no
     metformin: MedStatusEnum = MedStatusEnum.no
+    repaglinide: MedStatusEnum = MedStatusEnum.no
+    nateglinide: MedStatusEnum = MedStatusEnum.no
+    chlorpropamide: MedStatusEnum = MedStatusEnum.no
+    glimepiride: MedStatusEnum = MedStatusEnum.no
+    acetohexamide: MedStatusEnum = MedStatusEnum.no
+    glipizide: MedStatusEnum = MedStatusEnum.no
+    glyburide: MedStatusEnum = MedStatusEnum.no
+    tolbutamide: MedStatusEnum = MedStatusEnum.no
+    pioglitazone: MedStatusEnum = MedStatusEnum.no
+    rosiglitazone: MedStatusEnum = MedStatusEnum.no
+    acarbose: MedStatusEnum = MedStatusEnum.no
+    miglitol: MedStatusEnum = MedStatusEnum.no
+    troglitazone: MedStatusEnum = MedStatusEnum.no
+    tolazamide: MedStatusEnum = MedStatusEnum.no
+    examide: MedStatusEnum = MedStatusEnum.no
+    citoglipton: MedStatusEnum = MedStatusEnum.no
+    glyburide_metformin: MedStatusEnum = MedStatusEnum.no
+    glipizide_metformin: MedStatusEnum = MedStatusEnum.no
+    glimepiride_pioglitazone: MedStatusEnum = MedStatusEnum.no
+    metformin_rosiglitazone: MedStatusEnum = MedStatusEnum.no
+    metformin_pioglitazone: MedStatusEnum = MedStatusEnum.no
     diag_category: DiagCategoryEnum = DiagCategoryEnum.unknown
-    n_active_meds: int = Field(ge=0, default=0)
-    n_med_changes: int = Field(ge=0, default=0)
 
     def compute_cci(self):
         """Compute Charlson Comorbidity Index from selected comorbidities."""
@@ -269,22 +288,76 @@ class PatientInput(BaseModel):
                          {"value": ">300", "label": "> 300 mg/dL"}]},
             {"name": "diabetes_med", "label": "On Diabetes Medication", "type": "boolean"},
             {"name": "med_change", "label": "Medication Changed During Visit", "type": "boolean"},
-            {"name": "insulin", "label": "Insulin Status", "type": "select",
-             "options": enum_options(MedStatusEnum)},
-            {"name": "metformin", "label": "Metformin Status", "type": "select",
-             "options": enum_options(MedStatusEnum)},
             {"name": "diag_category", "label": "Primary Diagnosis Category", "type": "select",
              "options": enum_options(DiagCategoryEnum)},
-            {"name": "n_active_meds", "label": "Number of Active Diabetes Medications", "type": "number", "min": 0},
-            {"name": "n_med_changes", "label": "Number of Medication Changes", "type": "number", "min": 0},
+            {"name": "medications", "label": "Diabetes Medications", "type": "med_status_group",
+             "options": [
+                 {"value": "insulin", "label": "Insulin"},
+                 {"value": "metformin", "label": "Metformin"},
+                 {"value": "glipizide", "label": "Glipizide"},
+                 {"value": "glyburide", "label": "Glyburide"},
+                 {"value": "glimepiride", "label": "Glimepiride"},
+                 {"value": "pioglitazone", "label": "Pioglitazone"},
+                 {"value": "rosiglitazone", "label": "Rosiglitazone"},
+                 {"value": "repaglinide", "label": "Repaglinide"},
+                 {"value": "nateglinide", "label": "Nateglinide"},
+                 {"value": "acarbose", "label": "Acarbose"},
+                 {"value": "miglitol", "label": "Miglitol"},
+                 {"value": "chlorpropamide", "label": "Chlorpropamide"},
+                 {"value": "tolbutamide", "label": "Tolbutamide"},
+                 {"value": "tolazamide", "label": "Tolazamide"},
+                 {"value": "troglitazone", "label": "Troglitazone"},
+                 {"value": "acetohexamide", "label": "Acetohexamide"},
+                 {"value": "glyburide_metformin", "label": "Glyburide-Metformin"},
+                 {"value": "glipizide_metformin", "label": "Glipizide-Metformin"},
+                 {"value": "glimepiride_pioglitazone", "label": "Glimepiride-Pioglitazone"},
+                 {"value": "metformin_rosiglitazone", "label": "Metformin-Rosiglitazone"},
+                 {"value": "metformin_pioglitazone", "label": "Metformin-Pioglitazone"},
+                 {"value": "examide", "label": "Examide"},
+                 {"value": "citoglipton", "label": "Citoglipton"},
+             ],
+             "status_options": enum_options(MedStatusEnum)},
         ]
+
+    def _med_fields(self):
+        """Return all 23 medication field names and their ordinal-encoded values."""
+        med_ordinal = {"No": 0, "Steady": 1, "Down": 2, "Up": 3}
+        return {
+            "metformin": med_ordinal[self.metformin.value],
+            "repaglinide": med_ordinal[self.repaglinide.value],
+            "nateglinide": med_ordinal[self.nateglinide.value],
+            "chlorpropamide": med_ordinal[self.chlorpropamide.value],
+            "glimepiride": med_ordinal[self.glimepiride.value],
+            "acetohexamide": med_ordinal[self.acetohexamide.value],
+            "glipizide": med_ordinal[self.glipizide.value],
+            "glyburide": med_ordinal[self.glyburide.value],
+            "tolbutamide": med_ordinal[self.tolbutamide.value],
+            "pioglitazone": med_ordinal[self.pioglitazone.value],
+            "rosiglitazone": med_ordinal[self.rosiglitazone.value],
+            "acarbose": med_ordinal[self.acarbose.value],
+            "miglitol": med_ordinal[self.miglitol.value],
+            "troglitazone": med_ordinal[self.troglitazone.value],
+            "tolazamide": med_ordinal[self.tolazamide.value],
+            "examide": med_ordinal[self.examide.value],
+            "citoglipton": med_ordinal[self.citoglipton.value],
+            "insulin": med_ordinal[self.insulin.value],
+            "glyburide-metformin": med_ordinal[self.glyburide_metformin.value],
+            "glipizide-metformin": med_ordinal[self.glipizide_metformin.value],
+            "glimepiride-pioglitazone": med_ordinal[self.glimepiride_pioglitazone.value],
+            "metformin-rosiglitazone": med_ordinal[self.metformin_rosiglitazone.value],
+            "metformin-pioglitazone": med_ordinal[self.metformin_pioglitazone.value],
+        }
 
     def to_raw_df(self) -> pd.DataFrame:
         """Convert to a DataFrame with categorical columns ready for the encoder."""
-        # Encode medication status ordinally (same mapping as training)
-        med_ordinal = {"No": 0, "Steady": 1, "Down": 2, "Up": 3}
-        insulin_val = med_ordinal[self.insulin.value]
-        metformin_val = med_ordinal[self.metformin.value]
+        med_vals = self._med_fields()
+        insulin_val = med_vals["insulin"]
+        metformin_val = med_vals["metformin"]
+
+        # Compute aggregate medication features from individual selections
+        n_active_meds = sum(1 for v in med_vals.values() if v > 0)
+        n_med_changes = sum(1 for v in med_vals.values() if v in (2, 3))  # Down or Up
+        any_dose_up = int(any(v == 3 for v in med_vals.values()))
 
         # Encode A1C and glucose (same mapping as training)
         a1c_map = {"not_measured": -1, "Norm": 0, ">7": 1, ">8": 2}
@@ -296,7 +369,6 @@ class PatientInput(BaseModel):
         selected = set(c.value for c in self.comorbidities)
 
         total_prior = self.number_inpatient + self.number_outpatient + self.number_emergency
-        any_dose_up = int(insulin_val == 3 or metformin_val == 3 or self.n_med_changes > 0)
 
         row = {
             "age": self.age,
@@ -328,9 +400,9 @@ class PatientInput(BaseModel):
             # Individual medication status
             "insulin": insulin_val,
             "metformin": metformin_val,
-            # Aggregate medication features
-            "n_active_meds": self.n_active_meds,
-            "n_med_changes": self.n_med_changes,
+            # Aggregate medication features (computed from individual medications)
+            "n_active_meds": n_active_meds,
+            "n_med_changes": n_med_changes,
             "any_dose_up": any_dose_up,
             # Engineered features (same logic as training)
             "total_prior_visits": total_prior,

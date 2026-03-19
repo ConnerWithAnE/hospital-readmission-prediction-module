@@ -33,7 +33,7 @@ export default function InfoWindow({ onResult }: InfoWindowProps) {
 
     function handleRunAssessment() {
         const missing = fields
-            .filter(f => f.type !== "checkbox_group" && f.type !== "boolean" && (values[f.name] === undefined || values[f.name] === ""))
+            .filter(f => f.type !== "checkbox_group" && f.type !== "boolean" && f.type !== "med_status_group" && (values[f.name] === undefined || values[f.name] === ""))
             .map(f => f.label)
 
         if (missing.length > 0) {

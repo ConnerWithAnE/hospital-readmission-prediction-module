@@ -37,8 +37,7 @@ const FIELD_SECTIONS: { label: string; fields: string[] }[] = [
     {
         label: "Medications",
         fields: [
-            "num_medications", "n_active_meds", "n_med_changes",
-            "insulin", "metformin",
+            "num_medications",
             "diabetes_med", "med_change",
         ],
     },
@@ -50,11 +49,12 @@ const FIELD_SECTIONS: { label: string; fields: string[] }[] = [
 
 export default function ManualEntry({ fields, values, onChange }: ManualEntryProps) {
     const checkboxFields = fields.filter(f => f.type === "checkbox_group")
+    const medStatusFields = fields.filter(f => f.type === "med_status_group")
     const fieldMap = new Map(fields.map(f => [f.name, f]))
 
     // Collect any fields not in a section (safety net)
     const assigned = new Set(FIELD_SECTIONS.flatMap(s => s.fields))
-    const unassigned = fields.filter(f => f.type !== "checkbox_group" && !assigned.has(f.name))
+    const unassigned = fields.filter(f => f.type !== "checkbox_group" && f.type !== "med_status_group" && !assigned.has(f.name))
 
     return (
         <ScrollArea className="h-[calc(100vh-12rem)]">
@@ -95,6 +95,39 @@ export default function ManualEntry({ fields, values, onChange }: ManualEntryPro
                         </div>
                     </Section>
                 )}
+
+                {medStatusFields.length > 0 &&
+                    medStatusFields.map(item => (
+                        <Section key={item.name} label={item.label}>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                {item.options.map((opt: any) => {
+                                    const currentVal = values[opt.value] ?? "No"
+                                    return (
+                                        <div key={opt.value} className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground w-36 truncate shrink-0">{opt.label}</span>
+                                            <Select
+                                                value={currentVal}
+                                                onValueChange={val => onChange(opt.value, val)}
+                                            >
+                                                <SelectTrigger className="h-7 text-xs flex-1">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {item.status_options.map((s: any) => (
+                                                            <SelectItem key={s.value} value={s.value}>
+                                                                {s.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </Section>
+                    ))}
 
                 {checkboxFields.length > 0 &&
                     checkboxFields.map(item => (

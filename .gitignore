@@ -2,3 +2,4 @@ backend/datasets/mimic-iv-clinical-database-demo-2.2
 backend/datasets/mimic-iv-clinical-database-demo-2.2/**
 .venv
 backend/models/stacking_readmit_model.pkl
+backend/models/v3_best_so_far/stacking_readmit_model.pkl

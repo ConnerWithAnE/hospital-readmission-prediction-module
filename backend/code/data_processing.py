@@ -14,6 +14,7 @@ if __name__ == "__main__" and __package__ is None:
 import joblib
 import numpy as np
 import pandas as pd
+from catboost import CatBoostClassifier
 from xgboost import XGBClassifier
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
@@ -93,7 +94,7 @@ class PredictionModel:
         # Medication burden relative to stay
         df["meds_per_day"] = df["num_medications"] / (df["time_in_hospital"] + 1)
 
-        # Diagnosis complexity relative to stay
+        # Diagnosis complexity relative to sta
         stay = np.where(df["time_in_hospital"] == 0, 1, df["time_in_hospital"])
         df["diag_per_day"] = np.where(
             df["number_diagnoses"] == 0,
@@ -168,6 +169,10 @@ class PredictionModel:
             )),
             ('rf', RandomForestClassifier(
                 n_estimators=200, max_depth=12,
+            )),
+            ('catboost', CatBoostClassifier(
+                iterations=500, depth=6, learning_rate=0.05,
+                l2_leaf_reg=3, random_seed=42, verbose=0,
             )),
         ]
 
@@ -711,6 +716,119 @@ class PredictionModel:
         print(f"{'B: 3-model pruned':<48} {res_b['auroc']:>7.3f} {res_b['auprc']:>7.3f} {res_b['threshold']:>7.3f}")
         print(f"{'C: 4-model pruned':<48} {res_c['auroc']:>7.3f} {res_c['auprc']:>7.3f} {res_c['threshold']:>7.3f}")
         print(f"\nDropped features: {drop_features}")
+
+
+    @classmethod
+    def optuna_tune(cls, n_trials=75):
+        """Bayesian hyperparameter search over LGBM + RF params in the stacking ensemble."""
+        import optuna
+        from sklearn.model_selection import StratifiedKFold, cross_val_score
+        from imblearn.over_sampling import SMOTE
+
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+        instance = cls()
+        refined_data = instance.refine_dataset()
+        instance.get_split(refined_data)
+        X_train, X_test = instance.X_train, instance.X_test
+        y_train, y_test = instance.y_train, instance.y_test
+
+        # Feature pruning (same as production train)
+        smote = SMOTE(random_state=42)
+        X_res, y_res = smote.fit_resample(X_train, y_train)
+
+        lgbm_scout = LGBMClassifier(n_estimators=300, num_leaves=31, learning_rate=0.05,
+                                     subsample=0.8, colsample_bytree=0.8)
+        lgbm_scout.fit(X_res, y_res)
+        importances = lgbm_scout.feature_importances_
+        indexed = sorted(zip(X_train.columns.tolist(), importances), key=lambda x: x[1])
+        n_drop = max(1, len(indexed) // 7)
+        drop_features = [name for name, _ in indexed[:n_drop]]
+        print(f"Pruning {n_drop} features: {drop_features}")
+
+        X_res = X_res.drop(columns=drop_features)
+        X_train_p = X_train.drop(columns=drop_features)
+        X_test_p = X_test.drop(columns=drop_features)
+
+        print(f"Tuning on {len(X_res)} SMOTE samples, {len(X_res.columns)} features")
+        print(f"Running {n_trials} Optuna trials...\n")
+
+        cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+
+        def objective(trial):
+            lgbm_params = {
+                'n_estimators': trial.suggest_int('lgbm_n_estimators', 200, 800),
+                'num_leaves': trial.suggest_int('lgbm_num_leaves', 15, 63),
+                'learning_rate': trial.suggest_float('lgbm_learning_rate', 0.01, 0.1, log=True),
+                'subsample': trial.suggest_float('lgbm_subsample', 0.6, 1.0),
+                'colsample_bytree': trial.suggest_float('lgbm_colsample', 0.5, 1.0),
+                'min_child_samples': trial.suggest_int('lgbm_min_child', 20, 100),
+                'reg_alpha': trial.suggest_float('lgbm_reg_alpha', 1e-3, 10, log=True),
+                'reg_lambda': trial.suggest_float('lgbm_reg_lambda', 1e-3, 10, log=True),
+                'verbose': -1,
+            }
+            rf_params = {
+                'n_estimators': trial.suggest_int('rf_n_estimators', 100, 400),
+                'max_depth': trial.suggest_int('rf_max_depth', 8, 20),
+                'min_samples_leaf': trial.suggest_int('rf_min_samples_leaf', 1, 10),
+            }
+
+            stacker = StackingClassifier(
+                estimators=[
+                    ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
+                    ('lgbm', LGBMClassifier(**lgbm_params)),
+                    ('rf', RandomForestClassifier(**rf_params)),
+                ],
+                final_estimator=LogisticRegression(),
+                cv=3, stack_method='predict_proba', passthrough=False,
+            )
+            scores = cross_val_score(stacker, X_res, y_res, cv=cv, scoring='roc_auc', n_jobs=-1)
+            return scores.mean()
+
+        study = optuna.create_study(direction='maximize', study_name='stacking_tune')
+        study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+
+        print(f"\nBest AUROC (CV on SMOTE data): {study.best_value:.4f}")
+        print(f"Best params: {study.best_params}\n")
+
+        # Retrain with best params on full SMOTE data
+        bp = study.best_params
+        best_stacker = StackingClassifier(
+            estimators=[
+                ('lr', LogisticRegression(C=1.0, max_iter=3000, solver='lbfgs')),
+                ('lgbm', LGBMClassifier(
+                    n_estimators=bp['lgbm_n_estimators'], num_leaves=bp['lgbm_num_leaves'],
+                    learning_rate=bp['lgbm_learning_rate'], subsample=bp['lgbm_subsample'],
+                    colsample_bytree=bp['lgbm_colsample'], min_child_samples=bp['lgbm_min_child'],
+                    reg_alpha=bp['lgbm_reg_alpha'], reg_lambda=bp['lgbm_reg_lambda'], verbose=-1,
+                )),
+                ('rf', RandomForestClassifier(
+                    n_estimators=bp['rf_n_estimators'], max_depth=bp['rf_max_depth'],
+                    min_samples_leaf=bp['rf_min_samples_leaf'],
+                )),
+            ],
+            final_estimator=LogisticRegression(),
+            cv=5, stack_method='predict_proba', passthrough=False,
+        )
+        best_stacker.fit(X_res, y_res)
+
+        # Isotonic calibration
+        cal = CalibratedClassifierCV(best_stacker, method='isotonic', cv=3)
+        cal.fit(X_train_p, y_train)
+
+        y_proba = cal.predict_proba(X_test_p)[:, 1]
+        auroc = roc_auc_score(y_test, y_proba)
+        auprc = average_precision_score(y_test, y_proba)
+        pr, rc, th = precision_recall_curve(y_test, y_proba)
+        f1 = 2 * (pr * rc) / (pr + rc + 1e-8)
+        thresh = float(th[f1.argmax()])
+        y_pred = (y_proba >= thresh).astype(int)
+
+        print("=" * 60)
+        print("OPTUNA-TUNED MODEL (test set)")
+        print(f"  AUROC={auroc:.3f}  AUPRC={auprc:.3f}  Thresh={thresh:.3f}")
+        print(classification_report(y_test, y_pred, target_names=["No Readmit", "Readmit"]))
+        print(f"\nBaseline was: AUROC=0.670  AUPRC=0.223  Thresh=0.149")
 
 
 if __name__ == "__main__":
