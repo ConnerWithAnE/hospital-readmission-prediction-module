@@ -51,11 +51,17 @@ _MEDICARE_KEEP = [
 ]
 
 
+def _sniff_usecols(path: Path, col_map: dict) -> list[str]:
+    """Read just the header row and return only the columns we can map."""
+    header = pd.read_csv(path, nrows=0).columns.tolist()
+    return [c for c in header if c in col_map]
+
+
 def load_medicare_part_d(data_dir: Path) -> pd.DataFrame:
     """Load and concatenate all Medicare Part D CSVs in *data_dir*.
 
     Returns a DataFrame with one row per provider-drug record, with
-    standardised column names.
+    standardised column names.  Only reads the columns we actually need.
     """
     csv_files = sorted(data_dir.glob("*.csv"))
     if not csv_files:
@@ -63,20 +69,23 @@ def load_medicare_part_d(data_dir: Path) -> pd.DataFrame:
 
     frames = []
     for f in csv_files:
-        df = pd.read_csv(f, low_memory=False)
+        usecols = _sniff_usecols(f, _MEDICARE_COL_MAP)
+        print(f"  Reading {f.name} ({len(usecols)} cols)...")
+        df = pd.read_csv(f, usecols=usecols, dtype=str)
         df.rename(columns=_MEDICARE_COL_MAP, inplace=True)
 
-        # If year column is missing, try to parse from filename (e.g. "...DY20...")
+        # If year column is missing, parse from filename
         if "year" not in df.columns:
             for token in f.stem.split("_"):
+                # "DY20" style (CMS shorthand)
                 if token.startswith("DY") and token[2:].isdigit():
                     yr = int(token[2:])
                     df["year"] = 2000 + yr if yr < 100 else yr
                     break
-
-        # Keep only columns we need (ignore any that are missing)
-        available = [c for c in _MEDICARE_KEEP if c in df.columns]
-        df = df[available].copy()
+                # Plain 4-digit year like "2023"
+                if token.isdigit() and len(token) == 4:
+                    df["year"] = int(token)
+                    break
 
         # Coerce numeric columns
         for col in ["total_claims", "total_30day_fills", "total_day_supply", "total_drug_cost"]:
@@ -134,11 +143,10 @@ def load_fda_utilization(data_dir: Path) -> pd.DataFrame:
 
     frames = []
     for f in csv_files:
-        df = pd.read_csv(f, low_memory=False)
+        usecols = _sniff_usecols(f, _FDA_COL_MAP)
+        print(f"  Reading {f.name} ({len(usecols)} cols)...")
+        df = pd.read_csv(f, usecols=usecols, dtype=str)
         df.rename(columns=_FDA_COL_MAP, inplace=True)
-
-        available = [c for c in _FDA_KEEP if c in df.columns]
-        df = df[available].copy()
 
         # Coerce numeric columns
         for col in ["units_reimbursed", "num_prescriptions", "total_reimbursed"]:
