@@ -152,8 +152,10 @@ class PredictionModel:
         lgbm_scout.fit(X_resampled, y_resampled)
         importances = lgbm_scout.feature_importances_
         feature_names = self.X_train.columns.tolist()
+
         indexed = sorted(zip(feature_names, importances), key=lambda x: x[1])
         n_drop = max(1, len(indexed) // 7)  # ~15%
+
         self.drop_features = [name for name, imp in indexed[:n_drop]]
         print(f"Pruning {n_drop} low-importance features: {self.drop_features}")
 
@@ -231,7 +233,7 @@ class PredictionModel:
             try:
                 instance.best_threshold = joblib.load(MODELS_DIR / "best_threshold.pkl")
             except FileNotFoundError:
-                instance.best_threshold = 0.5
+                instance.best_threshold = 0.14
             try:
                 instance.lgbm_estimator = joblib.load(MODELS_DIR / "lgbm_estimator.pkl")
             except FileNotFoundError:
@@ -333,6 +335,8 @@ class PredictionModel:
         shap_values = lgbm.predict_proba(model_input, pred_contrib=True)[0]
         # pred_contrib returns one value per feature + a bias term at the end
         feature_names = model_input.columns.tolist()
+        # calls LightGBM's built-in pred_contrib mode, which returns per-feature contribution scores based on the tree structure.
+        # For each feature, it tells you how much that feature pushed the prediction up or down relative to the base (bias) term.
         contributions = shap_values[:-1]  # drop bias
 
         # Build sorted list of contributing factors

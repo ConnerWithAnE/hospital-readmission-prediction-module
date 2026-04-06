@@ -5,13 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/server/database.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/server/inventory.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/server/inventory_models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/medication_inventory_plan.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/code/readmission/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/cci.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/cci.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/data_maps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/data_maps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/data_processing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/dataset_exploration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/dataset_exploration.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/mimic_readmission_nn.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/mimic_readmission_nn.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/readmission_mimic_nn.pt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/readmission_mimic_nn.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/code/readmission_results.png" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/readmission/readmission_results.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +49,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "medication-tracking",
+    "git-widget-placeholder": "med-inventory",
     "last_opened_file_path": "C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
@@ -59,11 +61,11 @@
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v1" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\readmission" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\Planning" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2-1_tuning" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_pre_tuning" />
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_post_medication_fix" />
-      <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models\v2_post_high_impact" />
     </key>
   </component>
   <component name="RunManager" selected="Python.main">
@@ -81,7 +83,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/code/data_processing.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\readmission\data_processing.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -128,7 +130,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend/code/mimic_readmission_nn.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\readmission\mimic_readmission_nn.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -172,7 +174,11 @@
       <workItem from="1773761715393" duration="164000" />
       <workItem from="1773761901586" duration="11982000" />
       <workItem from="1773776884798" duration="6669000" />
-      <workItem from="1773948138652" duration="3683000" />
+      <workItem from="1773948138652" duration="11710000" />
+      <workItem from="1774880046797" duration="7976000" />
+      <workItem from="1775148824614" duration="48000" />
+      <workItem from="1775160149093" duration="56000" />
+      <workItem from="1775492597865" duration="2344000" />
     </task>
     <servers />
   </component>
