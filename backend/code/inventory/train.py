@@ -31,8 +31,6 @@ from .config import Config
 from .data_loading import load_fda_utilization, load_medicare_part_d
 from .data_processing import prepare_data
 from .model_gbm import GBMForecaster
-from .model_hybrid import HybridForecaster
-from .model_lstm import LSTMForecaster
 
 
 def _set_seed(seed: int):
@@ -110,31 +108,8 @@ def run(cfg: Config | None = None):
         if gbm_metrics["MAE"] < best_overall["MAE"]:
             best_overall = {**gbm_metrics, "obj": gbm, "type": "gbm", "feature_cols": feature_cols}
 
-        # ── LSTM ────────────────────────────────────────────────────────
-        print(f"\n--- LSTM ({granularity}) ---")
-        lstm = LSTMForecaster(cfg)
-        lstm.fit(train, val, feature_cols)
-        lstm_metrics = lstm.evaluate(test, feature_cols)
-        lstm_metrics["granularity"] = granularity
-        all_results.append(lstm_metrics)
-        print(f"  Test → MAE: {lstm_metrics['MAE']:,.1f} | "
-              f"RMSE: {lstm_metrics['RMSE']:,.1f} | MAPE: {lstm_metrics['MAPE']:.1f}%")
-
-        if not np.isnan(lstm_metrics["MAE"]) and lstm_metrics["MAE"] < best_overall["MAE"]:
-            best_overall = {**lstm_metrics, "obj": lstm, "type": "lstm", "feature_cols": feature_cols}
-
-        # ── Hybrid ──────────────────────────────────────────────────────
-        print(f"\n--- Hybrid ({granularity}) ---")
-        hybrid = HybridForecaster(cfg)
-        hybrid.fit(train, val, feature_cols)
-        hybrid_metrics = hybrid.evaluate(test, feature_cols)
-        hybrid_metrics["granularity"] = granularity
-        all_results.append(hybrid_metrics)
-        print(f"  Test → MAE: {hybrid_metrics['MAE']:,.1f} | "
-              f"RMSE: {hybrid_metrics['RMSE']:,.1f} | MAPE: {hybrid_metrics['MAPE']:.1f}%")
-
-        if not np.isnan(hybrid_metrics["MAE"]) and hybrid_metrics["MAE"] < best_overall["MAE"]:
-            best_overall = {**hybrid_metrics, "obj": hybrid, "type": "hybrid", "feature_cols": feature_cols}
+        # NOTE: LSTM and Hybrid disabled — need multi-year data for temporal depth.
+        # Re-enable when more years of data are available.
 
     # ── Summary ─────────────────────────────────────────────────────────
     print(f"\n{'=' * 60}")
@@ -155,13 +130,6 @@ def run(cfg: Config | None = None):
 
         if best_type == "gbm":
             joblib.dump(best_model.best_model, cfg.models_dir / "best_model_gbm.joblib")
-        elif best_type == "lstm":
-            torch.save(best_model.model.state_dict(), cfg.models_dir / "best_model_lstm.pt")
-            joblib.dump(best_model.scaler, cfg.models_dir / "best_model_lstm_scaler.joblib")
-        elif best_type == "hybrid":
-            torch.save(best_model.encoder.state_dict(), cfg.models_dir / "best_model_hybrid_encoder.pt")
-            joblib.dump(best_model.gbm, cfg.models_dir / "best_model_hybrid_gbm.joblib")
-            joblib.dump(best_model.scaler, cfg.models_dir / "best_model_hybrid_scaler.joblib")
 
         # Save metadata
         meta = {
@@ -179,6 +147,40 @@ def run(cfg: Config | None = None):
     # Comparison chart
     if all_results:
         _save_comparison_chart(all_results, cfg.output_dir)
+
+    # ── Sample predictions ──────────────────────────────────────────────
+    if "obj" in best_overall and best_overall["type"] == "gbm":
+        best_model = best_overall["obj"]
+        feat_cols = best_overall["feature_cols"]
+
+        # Re-run prepare_data for the best granularity to get the test set
+        _, _, test_best, _ = prepare_data(
+            medicare_df, fda_df, cfg, best_overall["granularity"]
+        )
+
+        test_best = test_best.copy()
+        test_best["predicted"] = best_model.predict(test_best, feat_cols)
+        test_best["error"] = (test_best["predicted"] - test_best["target"]).abs()
+
+        # Show top predictions by volume
+        sample = (
+            test_best
+            .nlargest(30, "target")
+            [["product_name", "state", "quarter", "target", "predicted", "error"]]
+            .copy()
+        )
+        sample.columns = ["Drug", "State", "Qtr", "Actual", "Predicted", "Error"]
+        for col in ["Actual", "Predicted", "Error"]:
+            sample[col] = sample[col].apply(lambda x: f"{x:,.0f}")
+
+        print(f"\n{'=' * 60}")
+        print("SAMPLE PREDICTIONS (top 30 by actual volume)")
+        print(f"{'=' * 60}")
+        print(sample.to_string(index=False))
+
+        # Also save full test predictions
+        test_best.to_csv(cfg.output_dir / "test_predictions.csv", index=False)
+        print(f"\nFull test predictions saved to {cfg.output_dir / 'test_predictions.csv'}")
 
     return results_df
 

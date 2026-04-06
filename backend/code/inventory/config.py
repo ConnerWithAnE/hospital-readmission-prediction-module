@@ -41,9 +41,11 @@ class Config:
     lag_periods: list = field(default_factory=lambda: [1, 2, 4])
     rolling_windows: list = field(default_factory=lambda: [2, 4])
 
-    # ── Train / val / test split (time-based) ──────────────────────────────
-    test_periods: int = 4
+    # ── Train / val / test split ──────────────────────────────────────────
+    test_periods: int = 4     # for time-based split (multi-year data)
     val_periods: int = 2
+    val_size: float = 0.15    # for group-based split (single-year data)
+    test_size: float = 0.15
 
     # ── GBM hyperparameters ─────────────────────────────────────────────────
     gbm_n_estimators: int = 500

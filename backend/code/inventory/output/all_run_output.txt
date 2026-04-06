@@ -1,0 +1,96 @@
+============================================================
+Loading datasets...
+============================================================
+  Reading Medicare_Part_D_Prescribers_by_Provider_and_Drug_2023.csv (7 cols)...
+[Medicare Part D] Loaded 26,794,878 rows from 1 file(s)
+  Reading StateDrugUtilizationData-2023.csv (11 cols)...
+[FDA Utilization] Loaded 5,325,079 rows from 1 file(s)
+
+============================================================
+Granularity: QUARTERLY
+============================================================
+  Aggregating Medicare...
+  Aggregating FDA...
+[Merge] 592,616 rows | 154,814 matched to Medicare
+[Features] 592,616 rows, 35 columns after feature engineering
+[Split (group-based)] Train: 414,690 | Val: 88,904 | Test: 89,022
+
+--- GBM (quarterly) ---
+C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+  XGBoost  val MAE: 66,963.0
+  LightGBM val MAE: 69,935.1
+  → Best GBM: XGBoost
+  Test → MAE: 59,575.3 | RMSE: 1,060,307.1 | MAPE: 1648.9%
+
+============================================================
+Granularity: MONTHLY
+============================================================
+  Aggregating Medicare...
+  Aggregating FDA...
+[Merge] 592,616 rows | 154,814 matched to Medicare
+[Features] 1,777,848 rows, 38 columns after feature engineering
+[Split (time-based)] Train: 895,377 | Val: 294,262 | Test: 588,209
+
+--- GBM (monthly) ---
+C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\.venv\Lib\site-packages\sklearn\utils\validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+  XGBoost  val MAE: 13,817.8
+  LightGBM val MAE: 15,475.1
+  → Best GBM: XGBoost
+  Test → MAE: 14,735.3 | RMSE: 238,552.6 | MAPE: 1226.2%
+
+============================================================
+RESULTS SUMMARY
+============================================================
+        model          MAE         RMSE        MAPE granularity
+GBM (XGBoost) 59575.296112 1.060307e+06 1648.911029   quarterly
+GBM (XGBoost) 14735.255034 2.385526e+05 1226.197713     monthly
+
+Results saved to C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\inventory\output\results_summary.csv
+
+Best model: GBM (XGBoost) @ monthly (MAE=14,735.3)
+
+Comparison chart saved to C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\inventory\output\model_comparison.png
+  Aggregating Medicare...
+  Aggregating FDA...
+[Merge] 592,616 rows | 154,814 matched to Medicare
+[Features] 1,777,848 rows, 38 columns after feature engineering
+[Split (time-based)] Train: 895,377 | Val: 294,262 | Test: 588,209
+
+============================================================
+SAMPLE PREDICTIONS (top 30 by actual volume)
+============================================================
+      Drug State  Qtr      Actual   Predicted      Error
+GAVILYTE -    XX    3 151,969,509 153,279,872  1,310,363
+SODIUM CHL    XX    4 141,681,145 151,818,864 10,137,719
+SODIUM CHL    XX    4 141,681,145 151,818,864 10,137,719
+SODIUM CHL    XX    4 141,681,145 151,818,864 10,137,719
+SODIUM CHL    XX    3 141,109,307 151,818,864 10,709,557
+AMOXICILLI    XX    4 128,905,817 130,369,720  1,463,903
+AMOXICILLI    XX    4 128,905,817 130,369,720  1,463,903
+AMOXICILLI    XX    4 128,905,817 130,369,720  1,463,903
+GAVILYTE -    XX    4 121,691,433 153,279,872 31,588,439
+GAVILYTE -    XX    4 121,691,433 153,279,872 31,588,439
+GAVILYTE -    XX    4 121,691,433 153,279,872 31,588,439
+GABAPENTIN    XX    3 106,199,994 108,151,856  1,951,862
+LACTATED R    XX    3 101,508,165 128,731,688 27,223,523
+GABAPENTIN    XX    4  99,092,972 107,054,952  7,961,980
+GABAPENTIN    XX    4  99,092,972 107,054,952  7,961,980
+GABAPENTIN    XX    4  99,092,972 107,054,952  7,961,980
+ IBUPROFEN    XX    4  96,795,895  83,245,096 13,550,799
+ IBUPROFEN    XX    4  96,795,895  83,245,096 13,550,799
+ IBUPROFEN    XX    4  96,795,895  83,245,096 13,550,799
+LACTATED R    XX    4  96,245,543 128,731,688 32,486,145
+LACTATED R    XX    4  96,245,543 128,731,688 32,486,145
+LACTATED R    XX    4  96,245,543 128,731,688 32,486,145
+ METFORMIN    XX    3  91,994,417  91,326,400    668,017
+POLYETHYLE    XX    3  89,754,553  89,827,552     72,999
+0.9% SODIU    XX    3  87,957,880  79,195,896  8,761,984
+AMOXICILLI    XX    3  87,778,429 130,294,208 42,515,779
+POLYETHYLE    XX    4  86,852,671  89,827,552  2,974,881
+POLYETHYLE    XX    4  86,852,671  89,827,552  2,974,881
+POLYETHYLE    XX    4  86,852,671  89,827,552  2,974,881
+ IBUPROFEN    XX    3  84,702,883  83,517,688  1,185,195
+
+Full test predictions saved to C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\code\inventory\output\test_predictions.csv

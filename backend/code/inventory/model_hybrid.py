@@ -74,9 +74,12 @@ def _build_sequences_with_tabular(
             X_tabs.append(features[i + seq_len])
             y_vals.append(targets[i + seq_len])
 
+    # Fall back to single-step if no sequences could be built
     if not X_seqs:
-        nf = len(feature_cols)
-        return np.empty((0, seq_len, nf)), np.empty((0, nf)), np.empty(0)
+        X_all = df[feature_cols].values
+        y_all = df["target"].values
+        return X_all[:, np.newaxis, :], X_all, y_all  # (n, 1, feat), (n, feat), (n,)
+
     return np.array(X_seqs), np.array(X_tabs), np.array(y_vals)
 
 
@@ -106,15 +109,16 @@ class HybridForecaster:
         optimizer = torch.optim.Adam(self.encoder.parameters(), lr=cfg.lstm_lr)
         criterion = nn.MSELoss()
 
-        X_t = torch.FloatTensor(X_seq).to(self.device)
-        y_t = torch.FloatTensor(y).to(self.device)
-        X_val_t = torch.FloatTensor(X_val_seq).to(self.device)
-        y_val_t = torch.FloatTensor(y_val).to(self.device)
+        X_t = torch.FloatTensor(np.array(X_seq, copy=True)).to(self.device)
+        y_t = torch.FloatTensor(np.array(y, copy=True)).to(self.device)
+        X_val_t = torch.FloatTensor(np.array(X_val_seq, copy=True)).to(self.device)
+        y_val_t = torch.FloatTensor(np.array(y_val, copy=True)).to(self.device)
 
         ds = TensorDataset(X_t, y_t)
         loader = DataLoader(ds, batch_size=cfg.lstm_batch_size, shuffle=True)
 
         best_val_loss = float("inf")
+        best_state = {k: v.cpu().clone() for k, v in self.encoder.state_dict().items()}
         patience_counter = 0
         epochs = cfg.lstm_epochs // 2  # fewer epochs since this is just for embeddings
 
@@ -149,7 +153,7 @@ class HybridForecaster:
     def _get_embeddings(self, X_seq: np.ndarray) -> np.ndarray:
         self.encoder.eval()
         with torch.no_grad():
-            X_t = torch.FloatTensor(X_seq).to(self.device)
+            X_t = torch.FloatTensor(np.array(X_seq, copy=True)).to(self.device)
             embeddings, _ = self.encoder(X_t)
         return embeddings.cpu().numpy()
 
@@ -182,6 +186,11 @@ class HybridForecaster:
         # Step 2: Extract embeddings
         emb_train = self._get_embeddings(X_seq_train)
         emb_val = self._get_embeddings(X_seq_val)
+
+        if np.isnan(emb_train).any() or np.isnan(emb_val).any():
+            print("  Hybrid: encoder producing NaN embeddings — not enough temporal depth.")
+            self.encoder = None
+            return
 
         # Step 3: Concatenate embeddings with tabular features
         X_combined_train = np.hstack([X_tab_train, emb_train])

@@ -57,6 +57,9 @@ def _build_sequences(df: pd.DataFrame, feature_cols: list[str],
 
     Groups by (product_name, state) and creates overlapping windows of
     length `seq_len`, with the target being the value at the next step.
+
+    Falls back to single-step mode (each row as a length-1 sequence)
+    when groups don't have enough periods for the requested seq_len.
     """
     X_seqs, y_vals = [], []
     for _, group in df.groupby(["product_name", "state"]):
@@ -67,8 +70,12 @@ def _build_sequences(df: pd.DataFrame, feature_cols: list[str],
             X_seqs.append(features[i : i + seq_len])
             y_vals.append(targets[i + seq_len])
 
+    # Fall back to single-step if no sequences could be built
     if not X_seqs:
-        return np.empty((0, seq_len, len(feature_cols))), np.empty(0)
+        X_single = df[feature_cols].values
+        y_single = df["target"].values
+        return X_single[:, np.newaxis, :], y_single  # (n, 1, features)
+
     return np.array(X_seqs), np.array(y_vals)
 
 
@@ -91,6 +98,11 @@ class LSTMForecaster:
         train_scaled[feature_cols] = self.scaler.transform(train[feature_cols].values)
         val_scaled[feature_cols] = self.scaler.transform(val[feature_cols].values)
 
+        # Scale target (raw units can be huge → MSE explodes → NaN gradients)
+        self.target_scaler = StandardScaler()
+        y_train_raw = train["target"].values.reshape(-1, 1)
+        self.target_scaler.fit(y_train_raw)
+
         # Build sequences
         X_train, y_train = _build_sequences(train_scaled, feature_cols, cfg.lstm_seq_len)
         X_val, y_val = _build_sequences(val_scaled, feature_cols, cfg.lstm_seq_len)
@@ -99,11 +111,15 @@ class LSTMForecaster:
             print("  LSTM: Not enough data to build sequences, skipping.")
             return
 
-        # Tensors
-        X_train_t = torch.FloatTensor(X_train).to(self.device)
-        y_train_t = torch.FloatTensor(y_train).to(self.device)
-        X_val_t = torch.FloatTensor(X_val).to(self.device)
-        y_val_t = torch.FloatTensor(y_val).to(self.device)
+        # Scale targets
+        y_train_scaled = self.target_scaler.transform(y_train.reshape(-1, 1)).ravel()
+        y_val_scaled = self.target_scaler.transform(y_val.reshape(-1, 1)).ravel()
+
+        # Tensors — .copy() to ensure writable arrays
+        X_train_t = torch.FloatTensor(np.array(X_train, copy=True)).to(self.device)
+        y_train_t = torch.FloatTensor(np.array(y_train_scaled, copy=True)).to(self.device)
+        X_val_t = torch.FloatTensor(np.array(X_val, copy=True)).to(self.device)
+        y_val_t = torch.FloatTensor(np.array(y_val_scaled, copy=True)).to(self.device)
 
         train_ds = TensorDataset(X_train_t, y_train_t)
         train_loader = DataLoader(train_ds, batch_size=cfg.lstm_batch_size, shuffle=True)
@@ -121,6 +137,7 @@ class LSTMForecaster:
         criterion = nn.MSELoss()
 
         best_val_loss = float("inf")
+        best_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
         patience_counter = 0
 
         for epoch in range(1, cfg.lstm_epochs + 1):
@@ -131,6 +148,8 @@ class LSTMForecaster:
                 optimizer.zero_grad()
                 pred = self.model(xb)
                 loss = criterion(pred, yb)
+                if torch.isnan(loss):
+                    continue
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
                 optimizer.step()
@@ -140,10 +159,10 @@ class LSTMForecaster:
             # Validate
             self.model.eval()
             with torch.no_grad():
-                val_pred = self.model(X_val_t)
-                val_loss = criterion(val_pred, y_val_t).item()
+                val_pred_scaled = self.model(X_val_t)
+                val_loss = criterion(val_pred_scaled, y_val_t).item()
 
-            if val_loss < best_val_loss:
+            if not np.isnan(val_loss) and val_loss < best_val_loss:
                 best_val_loss = val_loss
                 patience_counter = 0
                 best_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
@@ -157,8 +176,19 @@ class LSTMForecaster:
                 print(f"    Early stopping at epoch {epoch}")
                 break
 
+        # Restore best and compute val MAE in original scale
         self.model.load_state_dict(best_state)
-        val_mae = mean_absolute_error(y_val, val_pred.cpu().numpy())
+        self.model.eval()
+        with torch.no_grad():
+            val_pred_scaled = self.model(X_val_t).cpu().numpy()
+
+        if np.isnan(val_pred_scaled).any():
+            print("  LSTM: model producing NaN — not enough temporal depth for LSTM.")
+            self.model = None
+            return
+
+        val_pred = self.target_scaler.inverse_transform(val_pred_scaled.reshape(-1, 1)).ravel()
+        val_mae = mean_absolute_error(y_val, val_pred)
         print(f"  LSTM val MAE: {val_mae:,.1f}")
 
     def predict(self, df: pd.DataFrame, feature_cols: list[str]) -> np.ndarray:
@@ -174,9 +204,9 @@ class LSTMForecaster:
 
         self.model.eval()
         with torch.no_grad():
-            X_t = torch.FloatTensor(X).to(self.device)
-            preds = self.model(X_t).cpu().numpy()
-        return preds
+            X_t = torch.FloatTensor(np.array(X, copy=True)).to(self.device)
+            preds_scaled = self.model(X_t).cpu().numpy()
+        return self.target_scaler.inverse_transform(preds_scaled.reshape(-1, 1)).ravel()
 
     def evaluate(self, test: pd.DataFrame, feature_cols: list[str]) -> dict:
         if self.model is None:
@@ -191,8 +221,9 @@ class LSTMForecaster:
 
         self.model.eval()
         with torch.no_grad():
-            X_t = torch.FloatTensor(X_test).to(self.device)
-            y_pred = self.model(X_t).cpu().numpy()
+            X_t = torch.FloatTensor(np.array(X_test, copy=True)).to(self.device)
+            y_pred_scaled = self.model(X_t).cpu().numpy()
+        y_pred = self.target_scaler.inverse_transform(y_pred_scaled.reshape(-1, 1)).ravel()
 
         return {
             "model": "LSTM",
