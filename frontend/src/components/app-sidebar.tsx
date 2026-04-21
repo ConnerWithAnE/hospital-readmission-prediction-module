@@ -52,6 +52,11 @@ export function AppSidebar() {
                                 <Link to="/scenarios" className="text-xs"><span>Scenario Comparison</span></Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="Inventory Model">
+                                <Link to="/inventory_model" className="text-xs"><span>Inventory Model</span></Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
 
                         </SidebarMenu>
                 </SidebarGroup>

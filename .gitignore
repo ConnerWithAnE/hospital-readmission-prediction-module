@@ -5,3 +5,4 @@ backend/models/stacking_readmit_model.pkl
 backend/models/v3_best_so_far/stacking_readmit_model.pkl
 backend/data/
 backend/datasets/inventory/**/*.csv
+backend/code/inventory/output/test_predictions.csv

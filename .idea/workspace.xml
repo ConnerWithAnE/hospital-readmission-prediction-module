@@ -5,15 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d24cd8f0-36d7-47fa-9dce-40c60f722639" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/code/inventory/output/all_run_output.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/datasets/locations.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/inventory/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/inventory/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/inventory/data_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/inventory/data_processing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/inventory/model_hybrid.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/inventory/model_hybrid.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/inventory/model_lstm.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/inventory/model_lstm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/code/inventory/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/code/inventory/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/catboost_training.json" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/catboost_training.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn/events.out.tfevents" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/learn_error.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/learn_error.tsv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catboost_info/time_left.tsv" beforeDir="false" afterPath="$PROJECT_DIR$/catboost_info/time_left.tsv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/app-sidebar.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,22 +39,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.data_processing.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.mimic_readmission_nn.executor": "Run",
-    "Python.train.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "med-inventory",
-    "last_opened_file_path": "C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.data_processing.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mimic_readmission_nn.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;med-inventory&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ConnerHnatiuk/Documents/hospital-readmission-prediction-module/backend/models&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\ConnerHnatiuk\Documents\hospital-readmission-prediction-module\backend\models" />
@@ -204,7 +204,10 @@
       <workItem from="1774880046797" duration="7976000" />
       <workItem from="1775148824614" duration="48000" />
       <workItem from="1775160149093" duration="56000" />
-      <workItem from="1775492597865" duration="15002000" />
+      <workItem from="1775492597865" duration="15529000" />
+      <workItem from="1775595586001" duration="38000" />
+      <workItem from="1776109188205" duration="13000" />
+      <workItem from="1776804041034" duration="2100000" />
     </task>
     <servers />
   </component>

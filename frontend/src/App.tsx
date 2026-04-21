@@ -7,6 +7,7 @@ import { PatientAssessmentPage } from "./pages/patient-assesment";
 import { ModelAssessmentPage } from "./pages/model-assessment";
 import { ScenarioComparisonPage } from "./pages/scenario-comparison";
 import { MedicationInventoryPage } from "./pages/medication-inventory";
+import { InventoryModelPage } from "./pages/inventory-model";
 
 //<Route path="/" element={<Dashboard />} />
 //<Route path="/settings" element={<Settings />} />
@@ -19,6 +20,7 @@ export function App() {
             <Route path="/model_stats" element={<ModelAssessmentPage />} />
             <Route path="/scenarios" element={<ScenarioComparisonPage />} />
             <Route path="/inventory" element={<MedicationInventoryPage />} />
+            <Route path="/inventory_model" element={<InventoryModelPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
